@@ -223,6 +223,89 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .print-area,.print-area *{visibility:visible;}
     .print-area{position:absolute;left:0;top:0;width:100%;}
 }
+
+/* ==========================================
+   MOBILE PREMIUM OPTIMIZATION
+   ========================================== */
+@media (max-width: 768px) {
+    /* Sembunyikan sidebar desktop, ganti dengan bottom nav */
+    .sidebar { display: none !important; }
+    .main { margin-left: 0 !important; padding-bottom: 85px !important; }
+    .content { padding: 16px !important; }
+    .menu-toggle { display: block !important; }
+    
+    /* Bottom Navigation Bar (Gaya Aplikasi Native) */
+    .mobile-bottom-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(10, 14, 26, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--border);
+        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        z-index: 1000;
+        justify-content: space-around;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 6px 12px;
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-nav-item .icon { 
+        font-size: 22px; 
+        margin-bottom: 4px; 
+        transition: transform 0.2s;
+    }
+    .mobile-nav-item:active .icon { transform: scale(0.9); }
+    .mobile-nav-item.active { 
+        color: var(--accent-teal); 
+    }
+    .mobile-nav-item.active .icon {
+        filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6));
+    }
+
+    /* Perbesar Touch Target & Perbaiki Layout */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-card { padding: 16px; }
+    .stat-card .stat-value { font-size: 22px; }
+    .stat-card .stat-label { font-size: 10px; }
+    
+    .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .menu-tile { padding: 20px 10px; }
+    .menu-tile .tile-icon { width: 50px; height: 50px; font-size: 24px; }
+    
+    .form-grid { grid-template-columns: 1fr; gap: 16px; }
+    .input-wrap { min-height: 52px; }
+    .input-wrap input, .input-wrap select { padding: 16px 12px; font-size: 16px; } /* Mencegah zoom otomatis di iOS */
+    
+    .btn { padding: 16px; font-size: 15px; border-radius: 14px; font-weight: 700; }
+    .btn-sm { padding: 12px; font-size: 13px; }
+    
+    /* Scanner Mobile */
+    .scanner-box { max-width: 100%; border-radius: 16px; border: 2px solid var(--accent-teal); }
+    
+    /* List Item Mobile */
+    .list-item { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .list-item .btn { width: 100%; margin-top: 8px; }
+    
+    /* Modal Mobile */
+    .modal { margin: 16px; max-height: 85vh; padding: 20px; border-radius: 20px; }
+}
+
+/* Default hide mobile nav on desktop */
+.mobile-bottom-nav { display: none; }
+
 </style>
 </head>
 <body>
@@ -237,8 +320,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 <div class="login-screen" id="loginScreen">
     <div class="login-container">
         <div class="login-left">
-            <div class="login-logo">🅿️</div>
-            <h1>PARKIR PREMIUM</h1>
+        <div class="login-logo">
+            <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo Kabupaten Ende" style="width:80px;height:80px;object-fit:contain;">
+        </div>
+        <h1>PARKIR PREMIUM</h1>
+        <p style="font-size:12px;margin-top:4px;">Kabupaten Ende</p>
             <p>Enterprise Parking Management System<br>v7.0 — Multi-Device, Real-time, Cloud-based</p>
             <div style="margin-top:30px;color:rgba(255,255,255,0.7);font-size:12px;">
                 <p>✨ Scan QR dengan kamera</p>
@@ -278,8 +364,14 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>🅿️ PARKIR PREMIUM</h3>
-            <p>Enterprise v7.0</p>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo" style="width:40px;height:40px;object-fit:contain;">
+            <div>
+                <h3 style="font-size:14px;">PARKIR PREMIUM</h3>
+                <p style="font-size:10px;color:var(--text-muted);">Kab. Ende • v7.0</p>
+            </div>
+        </div>
+    </div>
         </div>
         <div class="nav-section">
             <div class="nav-section-title">Utama</div>
@@ -663,5 +755,28 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
+<!-- MOBILE BOTTOM NAVIGATION -->
+<nav class="mobile-bottom-nav">
+    <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span>
+        <span>Home</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('masuk', this)">
+        <span class="icon">🚪</span>
+        <span>Masuk</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('scanner', this)">
+        <span class="icon">📷</span>
+        <span>Scan</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('keluar', this)">
+        <span class="icon">🔑</span>
+        <span>Keluar</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
+        <span class="icon">👤</span>
+        <span>Member</span>
+    </a>
+</nav>
 </body>
 </html>
