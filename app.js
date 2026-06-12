@@ -8,9 +8,9 @@ const firebaseConfig = {
     projectId: "parkir-premium",
     storageBucket: "parkir-premium.firebasestorage.app",
     messagingSenderId: "768016342610",
-    appId: "1:768016342610:web:2bea8d7e778c6d3dd9c98b"
+    appId: "1:768016342610:web:d4b4ec374f54fe64d9c98b",
+    measurementId: "G-5QBVK8W2M0"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -916,4 +916,4 @@ initDefaultUsers();
 // Close modal on overlay click
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target.id === 'modal') closeModal();
-});
+});        
