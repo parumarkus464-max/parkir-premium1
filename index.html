@@ -244,7 +244,35 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .login-container{grid-template-columns:1fr;}
     .login-left{display:none;}
     .form-grid{grid-template-columns:1fr;}
-    .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stats-grid { 
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px; 
+    }
+    .stat-card { 
+        padding: 14px 10px; 
+        min-height: 110px;
+    }
+    .stat-card .stat-value { 
+        font-size: 20px; 
+        margin: 4px 0;
+    }
+    .stat-card .stat-label { 
+        font-size: 9px; 
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .stat-card .stat-icon {
+        font-size: 24px;
+        margin-bottom: 6px;
+    }
+    .stat-card .stat-trend {
+        font-size: 9px;
+    }
+    /* Pastikan stat cards urut: Aktif | Pendapatan (atas), Member | Transaksi (bawah) */
+    .stat-card:nth-child(1) { order: 1; } /* Kendaraan Aktif - Kiri Atas */
+    .stat-card:nth-child(2) { order: 2; } /* Pendapatan - Kanan Atas */
+    .stat-card:nth-child(3) { order: 3; } /* Total Member - Kiri Bawah */
+    .stat-card:nth-child(4) { order: 4; } /* Transaksi - Kanan Bawah */
     .stat-card { padding: 16px; }
     .stat-card .stat-value { font-size: 22px; }
     .stat-card .stat-label { font-size: 10px; }
