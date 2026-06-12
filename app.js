@@ -25,6 +25,7 @@ let currentUser = null;
 let selectedMember = null;
 let scannerInstance = null;
 let settings = { tarif_motor: 1000, tarif_mobil: 3000, diskon: 10, biaya_motor: 30000, biaya_mobil: 90000 };
+let isTopupProcessing = false;
 
 // ==========================================
 // UTILITIES
@@ -818,31 +819,58 @@ async function cariMemberTopup() {
 }
 
 async function prosesTopup(jumlah) {
+    // Mencegah klik ganda
+    if (isTopupProcessing) return; 
     if (!selectedMember) return toast('Cari member dulu','error');
-    
-    const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
-    if (!snap.exists()) return toast('Member tidak ditemukan','error');
-    const key = Object.keys(snap.val())[0];
-    const member = snap.val()[key];
-    
-    const saldoBaru = (member.saldo || 0) + jumlah;
-    const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
-    
-    await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
-    
-    showModal('Topup Berhasil', `
-        <div style="text-align:center;padding:20px;">
-            <h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2>
-            <p style="margin:16px 0;">Nominal: <strong style="color:var(--accent-gold);">${formatRupiah(jumlah)}</strong></p>
-            <p>Saldo Baru: <strong style="color:var(--success);font-size:20px;">${formatRupiah(saldoBaru)}</strong></p>
-            <p style="margin-top:10px;color:var(--text-secondary);font-size:12px;">Masa berlaku diperpanjang sampai ${formatTanggalSingkat(berlakuBaru)}</p>
-        </div>
-    `);
-    
-    selectedMember = null;
-    document.getElementById('topupSearch').value = '';
-    document.getElementById('topupInfo').style.display = 'none';
-    document.getElementById('topupNominal').style.display = 'none';
+
+    // Aktifkan status processing & matikan tombol
+    isTopupProcessing = true;
+    const btns = document.querySelectorAll('#topupNominal .btn');
+    btns.forEach(b => { 
+        b.disabled = true; 
+        b.style.opacity = '0.5'; 
+        b.style.cursor = 'not-allowed'; 
+    });
+
+    try {
+        const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
+        if (!snap.exists()) return toast('Member tidak ditemukan','error');
+
+        const key = Object.keys(snap.val())[0];
+        const member = snap.val()[key];
+
+        // Tambahkan saldo
+        const saldoBaru = (member.saldo || 0) + jumlah;
+        const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
+
+        await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
+
+        showModal('Topup Berhasil', `
+            <div style="text-align:center;padding:20px;">
+                <h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2>
+                <p style="margin:16px 0;">Nominal: <strong style="color:var(--accent-gold);">${formatRupiah(jumlah)}</strong></p>
+                <p>Saldo Baru: <strong style="color:var(--success);font-size:20px;">${formatRupiah(saldoBaru)}</strong></p>
+                <p style="margin-top:10px;color:var(--text-secondary);font-size:12px;">Masa berlaku diperpanjang sampai ${formatTanggalSingkat(berlakuBaru)}</p>
+            </div>
+        `);
+
+        // Reset form
+        selectedMember = null;
+        document.getElementById('topupSearch').value = '';
+        document.getElementById('topupInfo').style.display = 'none';
+        document.getElementById('topupNominal').style.display = 'none';
+        
+    } catch (err) {
+        toast('Gagal topup: ' + err.message, 'error');
+    } finally {
+        // Kembalikan status tombol
+        isTopupProcessing = false;
+        btns.forEach(b => { 
+            b.disabled = false; 
+            b.style.opacity = '1'; 
+            b.style.cursor = 'pointer'; 
+        });
+    }
 }
 
 // ==========================================
