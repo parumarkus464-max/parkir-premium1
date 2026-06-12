@@ -425,9 +425,15 @@ async function doKeluar(kode) {
     const diffMs = tKeluar - tMasuk;
     const jam = Math.max(1, Math.ceil(diffMs / 3600000));
     
+    // Ambil tarif dasar dari pengaturan
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
+    
+    // Cek apakah member dan ambil persentase diskon
     const diskonPersen = data.is_member ? (settings.diskon || 0) : 0;
-    const tarif = Math.round(tarifDasar * (100 - diskonPersen) / 100);
+    
+    // PERBAIKAN LOGIKA PERHITUNGAN (Lebih Transparan)
+    const potongan = Math.round(tarifDasar * (diskonPersen / 100));
+    const tarif = tarifDasar - potongan; 
     const biaya = jam * tarif;
     
     let saldoAkhir = null;
@@ -448,15 +454,20 @@ async function doKeluar(kode) {
         ...data,
         waktu_keluar: tKeluar.toISOString().replace('T',' ').substring(0,19),
         waktu_keluar_date: tKeluar.toISOString().split('T')[0],
-        lama_jam: jam, tarif_per_jam: tarif, diskon_persen: diskonPersen,
-        total_biaya: biaya, operator_keluar: currentUser.username,
+        lama_jam: jam, 
+        tarif_per_jam: tarif, 
+        diskon_persen: diskonPersen,
+        total_biaya: biaya, 
+        operator_keluar: currentUser.username,
         saldo_akhir: saldoAkhir
     };
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    const tag = data.is_member ? '🎖️ MEMBER' : '👤 REGULER';
+    const tag = data.is_member ? '️ MEMBER' : '👤 REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
+    
+    // Tampilkan detail perhitungan di struk agar jelas
     let struk = `<div class="struk">
         <div class="struk-header">
             <h3>🧾 STRUK — ${tag}</h3>
@@ -464,16 +475,20 @@ async function doKeluar(kode) {
         </div>
         <div class="struk-row"><span>Nama</span><span>${data.nama}</span></div>
         <div class="struk-row"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
-        <div class="struk-row"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
-        <div class="struk-row"><span>Masuk</span><span>${data.waktu_masuk}</span></div>
-        <div class="struk-row"><span>Keluar</span><span>${historyData.waktu_keluar}</span></div>
         <div class="struk-row"><span>Lama Parkir</span><span>${jam} jam</span></div>
-        <div class="struk-row"><span>Tarif/Jam</span><span>${formatRupiah(tarif)}${diskonPersen?' (diskon '+diskonPersen+'%)':''}</span></div>
+        <div class="struk-row"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>`;
+        
+    if (diskonPersen > 0) {
+        struk += `<div class="struk-row"><span>Diskon (${diskonPersen}%)</span><span style="color:var(--success);">- ${formatRupiah(potongan)}</span></div>`;
+    }
+    
+    struk += `<div class="struk-row"><span>Tarif Akhir</span><span>${formatRupiah(tarif)}/jam</span></div>
         <div class="struk-row struk-total"><span>TOTAL BAYAR</span><span style="color:${accent};">${formatRupiah(biaya)}</span></div>`;
+        
     if (saldoAkhir !== null) {
         struk += `<div class="struk-row"><span>Saldo Akhir</span><span style="color:var(--accent-teal);">${formatRupiah(saldoAkhir)}</span></div>`;
     }
-    struk += `</div><p style="text-align:center;margin-top:16px;color:var(--text-secondary);">Terima kasih 🙏</p>`;
+    struk += `</div><p style="text-align:center;margin-top:16px;color:var(--text-secondary);">Terima kasih </p>`;
     showModal('Struk Parkir', struk);
 }
 
