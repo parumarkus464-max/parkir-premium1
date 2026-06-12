@@ -104,7 +104,7 @@ function saveSession(user) {
         username: user.username,
         role: user.role,
         loginTime: new Date().getTime(),
-        expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000) // 24 jam
+        expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000)
     };
     localStorage.setItem('parkir_session', JSON.stringify(sessionData));
 }
@@ -154,7 +154,6 @@ function checkAuth() {
     return false;
 }
 
-// ✅ INI FUNGSI YANG SEMBELUMNYA HILANG!
 async function initDefaultUsers() {
     const snap = await db.ref('users').once('value');
     if (!snap.exists()) {
@@ -200,7 +199,7 @@ async function doLogin() {
     }
     
     currentUser = user;
-    saveSession(user); // ✅ SIMPAN SESSION
+    saveSession(user);
     
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
@@ -223,7 +222,7 @@ function quickLogin(u, p) {
 function doLogout() {
     if (!confirm('Yakin ingin logout?')) return;
     currentUser = null;
-    clearSession(); // ✅ HAPUS SESSION
+    clearSession();
     
     if (scannerInstance) { try { scannerInstance.stop(); } catch(e){} }
     document.getElementById('mainApp').classList.remove('active');
@@ -587,7 +586,7 @@ async function daftarMember() {
 }
 
 // ==========================================
-// DATA MEMBER
+// DATA MEMBER (DENGAN FITUR HAPUS)
 // ==========================================
 async function renderMembers() {
     const snap = await db.ref('members').once('value');
@@ -619,6 +618,10 @@ async function renderMembers() {
                 <p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(m.saldo||0)}</p>
                 <p><span style="color:${statusCol};font-weight:bold;">${m.status.toUpperCase()}</span> • Berlaku s/d ${formatTanggalSingkat(m.tgl_berlaku)}</p>
             </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+                <button class="btn btn-ghost btn-sm" onclick="showDetailMember('${m.nik}')" title="Detail">👁️</button>
+                <button class="btn btn-danger btn-sm" onclick="hapusMember('${m.nik}', '${m.nama.replace(/'/g, "\\'")}')" title="Hapus">🗑️</button>
+            </div>
         </div>`;
     }).join('');
 }
@@ -639,6 +642,32 @@ async function exportMemberCSV() {
     a.href = url; a.download = 'member_' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     toast('Export berhasil','success');
+}
+
+// ✅ FUNGSI HAPUS MEMBER BARU
+async function hapusMember(nik, nama) {
+    if (!confirm(`⚠️ PERINGATAN!\n\nAnda akan menghapus member:\n\nNama: ${nama}\nNIK: ${nik}\n\nData yang dihapus TIDAK BISA dikembalikan!\n\nLanjutkan?`)) {
+        return;
+    }
+    
+    if (!confirm(`Yakin 100% ingin hapus ${nama}?`)) {
+        return;
+    }
+    
+    try {
+        const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+        if (!snap.exists()) {
+            return toast('Member tidak ditemukan', 'error');
+        }
+        
+        const key = Object.keys(snap.val())[0];
+        await db.ref('members/' + key).remove();
+        
+        toast(`✅ Member ${nama} berhasil dihapus!`, 'success');
+        renderMembers();
+    } catch (err) {
+        toast('❌ Gagal hapus: ' + err.message, 'error');
+    }
 }
 
 // ==========================================
@@ -973,19 +1002,15 @@ async function initApp() {
     refreshDashboard();
 }
 
-// Enter key login
 document.getElementById('loginPass').addEventListener('keypress', e => {
     if (e.key === 'Enter') doLogin();
 });
 
-// Start clock
 setInterval(updateClock, 1000);
 updateClock();
 
-// Init default users
 initDefaultUsers();
 
-// AUTO-CHECK SESSION saat halaman dimuat
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (!checkAuth()) {
@@ -994,7 +1019,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 500);
 });
 
-// Close modal on overlay click
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target.id === 'modal') closeModal();
 });
