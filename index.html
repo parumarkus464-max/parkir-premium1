@@ -271,6 +271,45 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .print-area,.print-area *{visibility:visible;}
     .print-area{position:absolute;left:0;top:0;width:100%;}
 }
+    /* Tombol Logout di Topbar */
+.btn-logout {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1.5px solid var(--danger);
+    color: var(--danger);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+}
+.btn-logout:hover {
+    background: var(--danger);
+    color: white;
+    transform: scale(1.1);
+}
+.btn-logout:active {
+    transform: scale(0.95);
+}
+
+/* Di mobile: tombol logout lebih kecil & ada label */
+@media (max-width: 768px) {
+    .btn-logout {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+    }
+    .user-badge span {
+        display: none; /* Sembunyikan nama user di HP, cukup avatar */
+    }
+    .user-badge {
+        padding: 4px 8px;
+    }
+}
 </style>
 </head>
 <body>
@@ -378,9 +417,10 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     <div class="user-avatar" id="userAvatar">A</div>
                     <span id="userName">Admin</span>
                 </div>
+                <!-- Tombol Logout (Selalu Terlihat) -->
+                <button class="btn-logout" onclick="doLogout()" title="Logout">🚪</button>
             </div>
         </div>
-
         <div class="content">
             <!-- DASHBOARD -->
             <div class="page active" id="page-dashboard">
@@ -707,27 +747,26 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 
     <!-- MOBILE BOTTOM NAVIGATION (DI DALAM APP) -->
     <nav class="mobile-bottom-nav">
-        <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
-            <span class="icon">📊</span>
-            <span>Home</span>
-        </a>
-        <a class="mobile-nav-item" onclick="showPage('masuk', this)">
-            <span class="icon">🚪</span>
-            <span>Masuk</span>
-        </a>
-        <a class="mobile-nav-item" onclick="showPage('scanner', this)">
-            <span class="icon">📷</span>
-            <span>Scan</span>
-        </a>
-        <a class="mobile-nav-item" onclick="showPage('keluar', this)">
-            <span class="icon">🔑</span>
-            <span>Keluar</span>
-        </a>
-        <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
-            <span class="icon">👤</span>
-            <span>Member</span>
-        </a>
-    </nav>
+    <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span><span>Home</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('masuk', this)">
+        <span class="icon">🚪</span><span>Masuk</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('scanner', this)">
+        <span class="icon"></span><span>Scan</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('keluar', this)">
+        <span class="icon">🔑</span><span>Keluar</span>
+    </a>
+    <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
+        <span class="icon">👤</span><span>Member</span>
+    </a>
+    <!-- Tombol Logout di Bottom Nav -->
+    <a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);">
+        <span class="icon">🚪</span><span>Logout</span>
+    </a>
+</nav>
 </div>
 
 <!-- MODAL -->
