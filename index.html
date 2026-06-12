@@ -28,7 +28,6 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif;}
 body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overflow-x:hidden;}
 
-/* Animated Background Orbs */
 .bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
 .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.15;animation:float 20s infinite ease-in-out;}
 .orb1{background:var(--accent-indigo);width:400px;height:400px;top:-100px;left:-100px;}
@@ -36,20 +35,19 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .orb3{background:var(--accent-purple);width:300px;height:300px;bottom:-50px;left:30%;animation-delay:-10s;}
 @keyframes float{0%,100%{transform:translate(0,0);}33%{transform:translate(50px,-30px);}66%{transform:translate(-30px,50px);}}
 
-/* Login Screen */
 .login-screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
 .login-container{display:grid;grid-template-columns:1fr 1fr;max-width:900px;width:100%;background:var(--bg-card);border-radius:24px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.5);border:1px solid var(--border-light);}
-.login-left{background:linear-gradient(135deg,var(--accent-indigo),var(--accent-purple));padding:50px 40px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+.login-left{background:linear-gradient(135deg,var(--accent-indigo),var(--accent-purple));padding:50px 40px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;overflow:hidden;}
 .login-left::before{content:'';position:absolute;top:-50%;right:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);animation:pulse 4s infinite;}
 @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
-.login-logo{width:100px;height:100px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:20px;border:3px solid rgba(255,255,255,0.3);}
-.login-left h1{color:white;font-size:28px;margin-bottom:8px;}
-.login-left p{color:rgba(255,255,255,0.8);font-size:14px;line-height:1.6;}
+.login-logo{width:120px;height:120px;background:rgba(255,255,255,0.95);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;border:3px solid rgba(255,255,255,0.5);overflow:hidden;}
+.login-logo img{width:100%;height:100%;object-fit:contain;}
+.login-left h1{color:white;font-size:28px;margin-bottom:8px;position:relative;}
+.login-left p{color:rgba(255,255,255,0.8);font-size:14px;line-height:1.6;position:relative;}
 .login-right{padding:50px 40px;display:flex;flex-direction:column;justify-content:center;}
 .login-right h2{font-size:22px;margin-bottom:8px;}
 .login-right .subtitle{color:var(--text-secondary);font-size:13px;margin-bottom:24px;}
 
-/* Form Elements */
 .form-group{margin-bottom:16px;position:relative;}
 .form-group label{display:block;color:var(--text-secondary);font-size:12px;margin-bottom:6px;font-weight:500;}
 .input-wrap{position:relative;display:flex;align-items:center;background:var(--bg-input);border:1.5px solid var(--border);border-radius:12px;transition:all 0.3s;}
@@ -58,7 +56,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .input-wrap input,.input-wrap select,.input-wrap textarea{flex:1;background:transparent;border:none;color:var(--text-primary);padding:14px 12px;font-size:14px;outline:none;}
 .input-wrap select option{background:var(--bg-card);}
 
-/* Buttons */
 .btn{padding:14px 20px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
 .btn-primary{background:var(--accent-teal);color:var(--bg-dark);width:100%;}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(0,229,160,0.3);}
@@ -71,15 +68,15 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .btn-sm{padding:8px 14px;font-size:12px;}
 .quick-login{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
 
-/* Main App Layout */
 .app{display:none;min-height:100vh;position:relative;z-index:1;}
 .app.active{display:flex;}
 
-/* Sidebar */
 .sidebar{width:240px;background:var(--bg-sidebar);border-right:1px solid var(--border);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:10;transition:transform 0.3s;}
 .sidebar-header{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:16px;}
 .sidebar-header h3{color:var(--accent-teal);font-size:16px;display:flex;align-items:center;gap:8px;}
 .sidebar-header p{color:var(--text-muted);font-size:11px;margin-top:4px;}
+.sidebar-logo{width:40px;height:40px;background:rgba(255,255,255,0.95);border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+.sidebar-logo img{width:100%;height:100%;object-fit:contain;}
 .nav-section{padding:0 12px;margin-bottom:16px;}
 .nav-section-title{color:var(--text-muted);font-size:10px;text-transform:uppercase;padding:8px 12px;letter-spacing:1px;}
 .nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:var(--text-secondary);cursor:pointer;transition:all 0.2s;font-size:13px;margin-bottom:2px;position:relative;}
@@ -88,7 +85,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .nav-item.active::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--accent-teal);border-radius:0 2px 2px 0;}
 .nav-item .icon{font-size:18px;width:24px;}
 
-/* Main Content */
 .main{flex:1;margin-left:240px;padding:0;}
 .topbar{height:60px;background:var(--bg-mid);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:5;}
 .topbar-left{display:flex;align-items:center;gap:16px;}
@@ -104,13 +100,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .page.active{display:block;animation:fadeIn 0.3s;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
-/* Cards */
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);}
 .card-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .card-title .icon{font-size:20px;}
 
-/* Stats Grid */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
 .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;position:relative;overflow:hidden;transition:transform 0.2s;}
 .stat-card:hover{transform:translateY(-4px);}
@@ -124,7 +118,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .stat-card .stat-value{font-size:26px;font-weight:700;color:var(--text-primary);}
 .stat-card .stat-trend{font-size:11px;color:var(--success);margin-top:4px;}
 
-/* Welcome Banner */
 .welcome-banner{background:linear-gradient(135deg,var(--bg-card),var(--bg-mid));border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden;}
 .welcome-banner::before{content:'';position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,rgba(0,229,160,0.1) 0%,transparent 70%);}
 .welcome-banner h2{font-size:22px;margin-bottom:6px;position:relative;}
@@ -132,25 +125,21 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .welcome-info{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);position:relative;}
 .welcome-info span{display:flex;align-items:center;gap:4px;}
 
-/* Menu Grid */
 .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-bottom:24px;}
 .menu-tile{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
 .menu-tile:hover{transform:translateY(-3px);border-color:var(--accent-teal);}
 .menu-tile .tile-icon{width:44px;height:44px;margin:0 auto 8px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;}
 .menu-tile .tile-label{font-size:11px;font-weight:600;color:var(--text-primary);}
 
-/* Grid Forms */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .form-grid .full{grid-column:1/-1;}
 
-/* Lists */
 .list-item{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;transition:all 0.2s;}
 .list-item:hover{background:rgba(255,255,255,0.04);border-color:var(--border-light);}
 .list-item-info{flex:1;min-width:0;}
 .list-item-info h4{font-size:14px;margin-bottom:4px;}
 .list-item-info p{font-size:12px;color:var(--text-secondary);margin-bottom:2px;}
 
-/* Badges */
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
 .badge-member{background:rgba(16,185,129,0.15);color:var(--success);}
 .badge-reguler{background:rgba(148,163,184,0.15);color:var(--text-secondary);}
@@ -158,7 +147,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .badge-motor{background:rgba(59,130,246,0.15);color:var(--accent-blue);}
 .badge-mobil{background:rgba(139,92,246,0.15);color:var(--accent-purple);}
 
-/* Member Card Preview */
 .member-card-preview{background:linear-gradient(135deg,#1a237e,#0d47a1);border-radius:20px;padding:24px;color:white;position:relative;overflow:hidden;border:2px solid var(--accent-teal);max-width:400px;margin:20px auto;}
 .member-card-preview::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:rgba(255,255,255,0.05);border-radius:50%;}
 .member-card-preview::after{content:'';position:absolute;bottom:-80px;left:-80px;width:250px;height:250px;background:rgba(0,229,160,0.08);border-radius:50%;}
@@ -172,10 +160,8 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .member-card-preview .member-info p{font-size:11px;color:rgba(255,255,255,0.8);margin-bottom:4px;}
 .member-card-preview #qrcode{background:white;padding:8px;border-radius:8px;}
 
-/* Scanner */
 .scanner-box{max-width:400px;margin:0 auto;border-radius:16px;overflow:hidden;border:2px solid var(--accent-teal);}
 
-/* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.active{display:flex;}
 .modal{background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;animation:modalIn 0.3s;}
@@ -185,58 +171,37 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .modal-close{background:transparent;border:none;color:var(--text-secondary);font-size:24px;cursor:pointer;}
 .modal-close:hover{color:var(--danger);}
 
-/* Struk */
 .struk{background:white;color:black;padding:24px;border-radius:12px;font-family:'Courier New',monospace;}
 .struk-header{text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px;}
 .struk-header h3{font-size:18px;margin-bottom:4px;}
 .struk-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;}
 .struk-total{border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:16px;}
 
-/* Toast */
 .toast{position:fixed;top:20px;right:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 20px;z-index:2000;box-shadow:0 10px 30px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;transform:translateX(400px);transition:transform 0.3s;max-width:350px;}
 .toast.show{transform:translateX(0);}
 .toast.success{border-left:4px solid var(--success);}
 .toast.error{border-left:4px solid var(--danger);}
 .toast.info{border-left:4px solid var(--info);}
 
-/* Responsive */
-@media(max-width:768px){
-    .login-container{grid-template-columns:1fr;}
-    .login-left{display:none;}
-    .sidebar{transform:translateX(-100%);}
-    .sidebar.open{transform:translateX(0);}
-    .main{margin-left:0;}
-    .menu-toggle{display:block;}
-    .form-grid{grid-template-columns:1fr;}
-    .stats-grid{grid-template-columns:repeat(2,1fr);}
-    .menu-grid{grid-template-columns:repeat(3,1fr);}
-}
-@media(max-width:480px){
-    .stats-grid{grid-template-columns:1fr;}
-    .menu-grid{grid-template-columns:repeat(2,1fr);}
-    .content{padding:16px;}
-}
-
-/* Print */
-@media print{
-    body *{visibility:hidden;}
-    .print-area,.print-area *{visibility:visible;}
-    .print-area{position:absolute;left:0;top:0;width:100%;}
-}
+/* MOBILE BOTTOM NAV - Default hidden */
+.mobile-bottom-nav { display: none; }
 
 /* ==========================================
    MOBILE PREMIUM OPTIMIZATION
    ========================================== */
 @media (max-width: 768px) {
-    /* Sembunyikan sidebar desktop, ganti dengan bottom nav */
     .sidebar { display: none !important; }
     .main { margin-left: 0 !important; padding-bottom: 85px !important; }
     .content { padding: 16px !important; }
     .menu-toggle { display: block !important; }
     
-    /* Bottom Navigation Bar (Gaya Aplikasi Native) */
-    .mobile-bottom-nav {
+    /* Bottom nav hanya tampil saat app aktif */
+    .app.active + .mobile-bottom-nav,
+    .app.active ~ .mobile-bottom-nav {
         display: flex !important;
+    }
+    
+    .mobile-bottom-nav {
         position: fixed;
         bottom: 0;
         left: 0;
@@ -261,6 +226,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         padding: 6px 12px;
         transition: all 0.2s ease;
         -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
     }
     .mobile-nav-item .icon { 
         font-size: 22px; 
@@ -275,37 +241,36 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6));
     }
 
-    /* Perbesar Touch Target & Perbaiki Layout */
+    .login-container{grid-template-columns:1fr;}
+    .login-left{display:none;}
+    .form-grid{grid-template-columns:1fr;}
     .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
     .stat-card { padding: 16px; }
     .stat-card .stat-value { font-size: 22px; }
     .stat-card .stat-label { font-size: 10px; }
-    
     .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .menu-tile { padding: 20px 10px; }
     .menu-tile .tile-icon { width: 50px; height: 50px; font-size: 24px; }
-    
-    .form-grid { grid-template-columns: 1fr; gap: 16px; }
     .input-wrap { min-height: 52px; }
-    .input-wrap input, .input-wrap select { padding: 16px 12px; font-size: 16px; } /* Mencegah zoom otomatis di iOS */
-    
+    .input-wrap input, .input-wrap select { padding: 16px 12px; font-size: 16px; }
     .btn { padding: 16px; font-size: 15px; border-radius: 14px; font-weight: 700; }
     .btn-sm { padding: 12px; font-size: 13px; }
-    
-    /* Scanner Mobile */
     .scanner-box { max-width: 100%; border-radius: 16px; border: 2px solid var(--accent-teal); }
-    
-    /* List Item Mobile */
     .list-item { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
     .list-item .btn { width: 100%; margin-top: 8px; }
-    
-    /* Modal Mobile */
     .modal { margin: 16px; max-height: 85vh; padding: 20px; border-radius: 20px; }
 }
+@media(max-width:480px){
+    .stats-grid{grid-template-columns:1fr;}
+    .menu-grid{grid-template-columns:repeat(2,1fr);}
+    .content{padding:16px;}
+}
 
-/* Default hide mobile nav on desktop */
-.mobile-bottom-nav { display: none; }
-
+@media print{
+    body *{visibility:hidden;}
+    .print-area,.print-area *{visibility:visible;}
+    .print-area{position:absolute;left:0;top:0;width:100%;}
+}
 </style>
 </head>
 <body>
@@ -320,13 +285,13 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 <div class="login-screen" id="loginScreen">
     <div class="login-container">
         <div class="login-left">
-        <div class="login-logo">
-            <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo Kabupaten Ende" style="width:80px;height:80px;object-fit:contain;">
-        </div>
-        <h1>PARKIR PREMIUM</h1>
-        <p style="font-size:12px;margin-top:4px;">Kabupaten Ende</p>
-            <p>Enterprise Parking Management System<br>v7.0 — Multi-Device, Real-time, Cloud-based</p>
-            <div style="margin-top:30px;color:rgba(255,255,255,0.7);font-size:12px;">
+            <div class="login-logo">
+                <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo Kabupaten Ende">
+            </div>
+            <h1>PARKIR PREMIUM</h1>
+            <p style="font-size:12px;margin-top:4px;">Kabupaten Ende</p>
+            <p style="margin-top:20px;">Enterprise Parking Management System<br>v7.0 — Multi-Device, Real-time, Cloud-based</p>
+            <div style="margin-top:30px;color:rgba(255,255,255,0.7);font-size:12px;text-align:left;">
                 <p>✨ Scan QR dengan kamera</p>
                 <p>✨ Saldo member otomatis</p>
                 <p>✨ Laporan real-time</p>
@@ -364,14 +329,15 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo" style="width:40px;height:40px;object-fit:contain;">
-            <div>
-                <h3 style="font-size:14px;">PARKIR PREMIUM</h3>
-                <p style="font-size:10px;color:var(--text-muted);">Kab. Ende • v7.0</p>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="sidebar-logo">
+                    <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo">
+                </div>
+                <div>
+                    <h3 style="font-size:14px;margin:0;">PARKIR PREMIUM</h3>
+                    <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v7.0</p>
+                </div>
             </div>
-        </div>
-    </div>
         </div>
         <div class="nav-section">
             <div class="nav-section-title">Utama</div>
@@ -399,7 +365,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         </div>
     </aside>
 
-    <!-- MAIN -->
+    <!-- MAIN CONTENT -->
     <div class="main">
         <div class="topbar">
             <div class="topbar-left">
@@ -738,6 +704,30 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             </div>
         </div>
     </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION (DI DALAM APP) -->
+    <nav class="mobile-bottom-nav">
+        <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
+            <span class="icon">📊</span>
+            <span>Home</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('masuk', this)">
+            <span class="icon">🚪</span>
+            <span>Masuk</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('scanner', this)">
+            <span class="icon">📷</span>
+            <span>Scan</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('keluar', this)">
+            <span class="icon">🔑</span>
+            <span>Keluar</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
+            <span class="icon">👤</span>
+            <span>Member</span>
+        </a>
+    </nav>
 </div>
 
 <!-- MODAL -->
@@ -755,28 +745,5 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
-<!-- MOBILE BOTTOM NAVIGATION -->
-<nav class="mobile-bottom-nav">
-    <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
-        <span class="icon">📊</span>
-        <span>Home</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('masuk', this)">
-        <span class="icon">🚪</span>
-        <span>Masuk</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('scanner', this)">
-        <span class="icon">📷</span>
-        <span>Scan</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('keluar', this)">
-        <span class="icon">🔑</span>
-        <span>Keluar</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
-        <span class="icon">👤</span>
-        <span>Member</span>
-    </a>
-</nav>
 </body>
 </html>
