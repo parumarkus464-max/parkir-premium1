@@ -425,15 +425,10 @@ async function doKeluar(kode) {
     const diffMs = tKeluar - tMasuk;
     const jam = Math.max(1, Math.ceil(diffMs / 3600000));
     
-    // Ambil tarif dasar dari pengaturan
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
-    
-    // Cek apakah member dan ambil persentase diskon
     const diskonPersen = data.is_member ? (settings.diskon || 0) : 0;
-    
-    // PERBAIKAN LOGIKA PERHITUNGAN (Lebih Transparan)
     const potongan = Math.round(tarifDasar * (diskonPersen / 100));
-    const tarif = tarifDasar - potongan; 
+    const tarif = tarifDasar - potongan;
     const biaya = jam * tarif;
     
     let saldoAkhir = null;
@@ -464,32 +459,83 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    const tag = data.is_member ? '️ MEMBER' : '👤 REGULER';
+    const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
     
-    // Tampilkan detail perhitungan di struk agar jelas
-    let struk = `<div class="struk">
-        <div class="struk-header">
-            <h3>🧾 STRUK — ${tag}</h3>
-            <p style="font-size:11px;">PARKIR PREMIUM</p>
+    let struk = `
+    <div id="struk-content" class="struk" style="background:white;color:black;padding:24px;border-radius:12px;font-family:'Courier New',monospace;max-width:400px;margin:0 auto;">
+        <div style="text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px;">
+            <h3 style="font-size:18px;margin:0;">🧾 STRUK — ${tag}</h3>
+            <p style="font-size:11px;margin:4px 0 0 0;">PARKIR PREMIUM</p>
+            <p style="font-size:10px;margin:2px 0;">Kabupaten Ende</p>
         </div>
-        <div class="struk-row"><span>Nama</span><span>${data.nama}</span></div>
-        <div class="struk-row"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
-        <div class="struk-row"><span>Lama Parkir</span><span>${jam} jam</span></div>
-        <div class="struk-row"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>`;
-        
-    if (diskonPersen > 0) {
-        struk += `<div class="struk-row"><span>Diskon (${diskonPersen}%)</span><span style="color:var(--success);">- ${formatRupiah(potongan)}</span></div>`;
-    }
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Nama</span><span>${data.nama}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${data.waktu_masuk}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${historyData.waktu_keluar}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Lama Parkir</span><span>${jam} jam</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif/Jam</span><span>${formatRupiah(tarifDasar)}</span></div>
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--success);"><span>Diskon (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : ''}
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Setelah Diskon</span><span>${formatRupiah(tarif)}</span></div>` : ''}
+        <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:16px;display:flex;justify-content:space-between;">
+            <span>TOTAL BAYAR</span>
+            <span style="color:${accent};">${formatRupiah(biaya)}</span>
+        </div>
+        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Saldo Akhir</span><span style="color:var(--accent-teal);font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
+        <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
+            Terima kasih 🙏<br>
+            www.parkirpremium.id
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="cetakStruk()" class="btn btn-primary" style="flex:1;padding:12px;background:var(--accent-teal);color:var(--bg-dark);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+            🖨️ Cetak Struk
+        </button>
+        <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);border-radius:8px;font-weight:bold;cursor:pointer;">
+            Tutup
+        </button>
+    </div>`;
     
-    struk += `<div class="struk-row"><span>Tarif Akhir</span><span>${formatRupiah(tarif)}/jam</span></div>
-        <div class="struk-row struk-total"><span>TOTAL BAYAR</span><span style="color:${accent};">${formatRupiah(biaya)}</span></div>`;
-        
-    if (saldoAkhir !== null) {
-        struk += `<div class="struk-row"><span>Saldo Akhir</span><span style="color:var(--accent-teal);">${formatRupiah(saldoAkhir)}</span></div>`;
-    }
-    struk += `</div><p style="text-align:center;margin-top:16px;color:var(--text-secondary);">Terima kasih </p>`;
     showModal('Struk Parkir', struk);
+}
+
+// Fungsi untuk cetak struk
+function cetakStruk() {
+    const strukContent = document.getElementById('struk-content');
+    if (!strukContent) return;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Struk Parkir - ${new Date().toLocaleString('id-ID')}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 20px; }
+                    .no-print { display: none; }
+                }
+                body { 
+                    font-family: 'Courier New', monospace; 
+                    max-width: 400px; 
+                    margin: 0 auto; 
+                    padding: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            ${strukContent.innerHTML}
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(() => window.close(), 1000);
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 
 // ==========================================
