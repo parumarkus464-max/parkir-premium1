@@ -86,10 +86,10 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .nav-item .icon{font-size:18px;width:24px;}
 
 .main{flex:1;margin-left:240px;padding:0;}
-.topbar{height:60px;background:var(--bg-mid);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:5;}
+.topbar{height:60px;background:var(--bg-mid);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:5;}
 .topbar-left{display:flex;align-items:center;gap:16px;}
 .topbar-left h2{font-size:18px;}
-.topbar-right{display:flex;align-items:center;gap:16px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
 .clock{color:var(--text-secondary);font-size:13px;font-family:monospace;}
 .user-badge{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg-card);border-radius:20px;font-size:12px;}
 .user-avatar{width:30px;height:30px;background:var(--accent-teal);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--bg-dark);font-weight:bold;}
@@ -183,123 +183,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .toast.error{border-left:4px solid var(--danger);}
 .toast.info{border-left:4px solid var(--info);}
 
-/* MOBILE BOTTOM NAV - Default hidden */
-.mobile-bottom-nav { display: none; }
-
-/* ==========================================
-   MOBILE PREMIUM OPTIMIZATION
-   ========================================== */
-@media (max-width: 768px) {
-    .sidebar { display: none !important; }
-    .main { margin-left: 0 !important; padding-bottom: 85px !important; }
-    .content { padding: 16px !important; }
-    .menu-toggle { display: block !important; }
-    
-    /* Bottom nav hanya tampil saat app aktif */
-    .app.active + .mobile-bottom-nav,
-    .app.active ~ .mobile-bottom-nav {
-        display: flex !important;
-    }
-    
-    .mobile-bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(10, 14, 26, 0.95);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-top: 1px solid var(--border);
-        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-        z-index: 1000;
-        justify-content: space-around;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-    }
-    .mobile-nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: var(--text-muted);
-        font-size: 10px;
-        font-weight: 600;
-        text-decoration: none;
-        padding: 6px 12px;
-        transition: all 0.2s ease;
-        -webkit-tap-highlight-color: transparent;
-        cursor: pointer;
-    }
-    .mobile-nav-item .icon { 
-        font-size: 22px; 
-        margin-bottom: 4px; 
-        transition: transform 0.2s;
-    }
-    .mobile-nav-item:active .icon { transform: scale(0.9); }
-    .mobile-nav-item.active { 
-        color: var(--accent-teal); 
-    }
-    .mobile-nav-item.active .icon {
-        filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6));
-    }
-
-    .login-container{grid-template-columns:1fr;}
-    .login-left{display:none;}
-    .form-grid{grid-template-columns:1fr;}
-    .stats-grid { 
-    grid-template-columns: 1fr 1fr; 
-    gap: 10px; 
-    }
-    .stat-card { 
-        padding: 14px 10px; 
-        min-height: 110px;
-    }
-    .stat-card .stat-value { 
-        font-size: 20px; 
-        margin: 4px 0;
-    }
-    .stat-card .stat-label { 
-        font-size: 9px; 
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-    .stat-card .stat-icon {
-        font-size: 24px;
-        margin-bottom: 6px;
-    }
-    .stat-card .stat-trend {
-        font-size: 9px;
-    }
-    /* Pastikan stat cards urut: Aktif | Pendapatan (atas), Member | Transaksi (bawah) */
-    .stat-card:nth-child(1) { order: 1; } /* Kendaraan Aktif - Kiri Atas */
-    .stat-card:nth-child(2) { order: 2; } /* Pendapatan - Kanan Atas */
-    .stat-card:nth-child(3) { order: 3; } /* Total Member - Kiri Bawah */
-    .stat-card:nth-child(4) { order: 4; } /* Transaksi - Kanan Bawah */
-    .stat-card { padding: 16px; }
-    .stat-card .stat-value { font-size: 22px; }
-    .stat-card .stat-label { font-size: 10px; }
-    .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .menu-tile { padding: 20px 10px; }
-    .menu-tile .tile-icon { width: 50px; height: 50px; font-size: 24px; }
-    .input-wrap { min-height: 52px; }
-    .input-wrap input, .input-wrap select { padding: 16px 12px; font-size: 16px; }
-    .btn { padding: 16px; font-size: 15px; border-radius: 14px; font-weight: 700; }
-    .btn-sm { padding: 12px; font-size: 13px; }
-    .scanner-box { max-width: 100%; border-radius: 16px; border: 2px solid var(--accent-teal); }
-    .list-item { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
-    .list-item .btn { width: 100%; margin-top: 8px; }
-    .modal { margin: 16px; max-height: 85vh; padding: 20px; border-radius: 20px; }
-}
-@media(max-width:480px){
-    .stats-grid{grid-template-columns:1fr;}
-    .menu-grid{grid-template-columns:repeat(2,1fr);}
-    .content{padding:16px;}
-}
-
-@media print{
-    body *{visibility:hidden;}
-    .print-area,.print-area *{visibility:visible;}
-    .print-area{position:absolute;left:0;top:0;width:100%;}
-}
-    /* Tombol Logout di Topbar */
+/* Tombol Logout di Topbar */
 .btn-logout {
     background: rgba(239, 68, 68, 0.15);
     border: 1.5px solid var(--danger);
@@ -324,19 +208,164 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     transform: scale(0.95);
 }
 
-/* Di mobile: tombol logout lebih kecil & ada label */
+/* MOBILE BOTTOM NAV - Default hidden */
+.mobile-bottom-nav { display: none; }
+
+/* ==========================================
+   MOBILE PREMIUM OPTIMIZATION
+   ========================================== */
 @media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    .main { margin-left: 0 !important; padding-bottom: 85px !important; }
+    .content { padding: 16px !important; }
+    .menu-toggle { display: block !important; }
+    .topbar { padding: 0 12px; }
+    
+    /* Bottom nav hanya tampil saat app aktif */
+    .app.active + .mobile-bottom-nav,
+    .app.active ~ .mobile-bottom-nav {
+        display: flex !important;
+    }
+    
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(10, 14, 26, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--border);
+        padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+        z-index: 1000;
+        justify-content: space-around;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-muted);
+        font-size: 9px;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 4px 6px;
+        transition: all 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+        cursor: pointer;
+        min-width: 0;
+    }
+    .mobile-nav-item .icon { 
+        font-size: 20px; 
+        margin-bottom: 2px; 
+        transition: transform 0.2s;
+    }
+    .mobile-nav-item:active .icon { transform: scale(0.9); }
+    .mobile-nav-item.active { color: var(--accent-teal); }
+    .mobile-nav-item.active .icon {
+        filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6));
+    }
+
+    .login-container{grid-template-columns:1fr;}
+    .login-left{display:none;}
+    .form-grid{grid-template-columns:1fr;}
+    
+    /* ✅ STATS GRID 2x2 - SUDAH DIPERBAIKI */
+    .stats-grid { 
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 10px !important; 
+    }
+    .stat-card { 
+        padding: 14px 10px !important; 
+        min-height: 105px !important;
+    }
+    .stat-card .stat-value { 
+        font-size: 18px !important; 
+        margin: 4px 0 !important;
+        line-height: 1.2 !important;
+    }
+    .stat-card .stat-label { 
+        font-size: 9px !important; 
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        line-height: 1.3 !important;
+    }
+    .stat-card .stat-icon {
+        font-size: 22px !important;
+        margin-bottom: 4px !important;
+    }
+    .stat-card .stat-trend {
+        font-size: 8px !important;
+    }
+    
+    /* Urutan stat cards */
+    .stat-card:nth-child(1) { order: 1; } /* Kendaraan Aktif - Kiri Atas */
+    .stat-card:nth-child(2) { order: 2; } /* Pendapatan - Kanan Atas */
+    .stat-card:nth-child(3) { order: 3; } /* Total Member - Kiri Bawah */
+    .stat-card:nth-child(4) { order: 4; } /* Transaksi - Kanan Bawah */
+    
+    .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .menu-tile { padding: 20px 10px; }
+    .menu-tile .tile-icon { width: 50px; height: 50px; font-size: 24px; }
+    .input-wrap { min-height: 52px; }
+    .input-wrap input, .input-wrap select { padding: 16px 12px; font-size: 16px; }
+    .btn { padding: 16px; font-size: 15px; border-radius: 14px; font-weight: 700; }
+    .btn-sm { padding: 12px; font-size: 13px; }
+    .scanner-box { max-width: 100%; border-radius: 16px; border: 2px solid var(--accent-teal); }
+    .list-item { padding: 16px; flex-direction: column; align-items: flex-start; gap: 12px; }
+    .list-item .btn { width: 100%; margin-top: 8px; }
+    .modal { margin: 16px; max-height: 85vh; padding: 20px; border-radius: 20px; }
+    
+    /* Tombol Logout di mobile */
     .btn-logout {
         width: 34px;
         height: 34px;
         font-size: 16px;
     }
     .user-badge span {
-        display: none; /* Sembunyikan nama user di HP, cukup avatar */
+        display: none;
     }
     .user-badge {
         padding: 4px 8px;
     }
+    .clock {
+        font-size: 11px;
+    }
+}
+
+/* ✅ PERBAIKAN: HP sangat kecil tetap 2 kolom */
+@media(max-width:480px){
+    .stats-grid{
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    .stat-card {
+        padding: 12px 8px !important;
+        min-height: 95px !important;
+    }
+    .stat-card .stat-value {
+        font-size: 16px !important;
+    }
+    .stat-card .stat-label {
+        font-size: 8px !important;
+    }
+    .stat-card .stat-icon {
+        font-size: 20px !important;
+    }
+    .menu-grid{grid-template-columns:repeat(2,1fr);}
+    .content{padding:12px;}
+    .welcome-banner {
+        padding: 16px;
+    }
+    .welcome-banner h2 {
+        font-size: 18px;
+    }
+}
+
+@media print{
+    body *{visibility:hidden;}
+    .print-area,.print-area *{visibility:visible;}
+    .print-area{position:absolute;left:0;top:0;width:100%;}
 }
 </style>
 </head>
@@ -445,7 +474,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     <div class="user-avatar" id="userAvatar">A</div>
                     <span id="userName">Admin</span>
                 </div>
-                <!-- Tombol Logout (Selalu Terlihat) -->
                 <button class="btn-logout" onclick="doLogout()" title="Logout">🚪</button>
             </div>
         </div>
@@ -773,28 +801,27 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         </div>
     </div>
 
-    <!-- MOBILE BOTTOM NAVIGATION (DI DALAM APP) -->
+    <!-- MOBILE BOTTOM NAVIGATION (6 Item) -->
     <nav class="mobile-bottom-nav">
-    <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
-        <span class="icon">📊</span><span>Home</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('masuk', this)">
-        <span class="icon">🚪</span><span>Masuk</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('scanner', this)">
-        <span class="icon"></span><span>Scan</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('keluar', this)">
-        <span class="icon">🔑</span><span>Keluar</span>
-    </a>
-    <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
-        <span class="icon">👤</span><span>Member</span>
-    </a>
-    <!-- Tombol Logout di Bottom Nav -->
-    <a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);">
-        <span class="icon">🚪</span><span>Logout</span>
-    </a>
-</nav>
+        <a class="mobile-nav-item active" onclick="showPage('dashboard', this)">
+            <span class="icon">📊</span><span>Home</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('masuk', this)">
+            <span class="icon">🚪</span><span>Masuk</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('scanner', this)">
+            <span class="icon"></span><span>Scan</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('keluar', this)">
+            <span class="icon">🔑</span><span>Keluar</span>
+        </a>
+        <a class="mobile-nav-item" onclick="showPage('dataMember', this)">
+            <span class="icon">👤</span><span>Member</span>
+        </a>
+        <a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);">
+            <span class="icon">🚪</span><span>Logout</span>
+        </a>
+    </nav>
 </div>
 
 <!-- MODAL -->
