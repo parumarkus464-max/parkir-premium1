@@ -1,5 +1,5 @@
 // ==========================================
-// KONFIGURASI FIREBASE (GANTI DENGAN PUNYA ANDA!)
+// KONFIGURASI FIREBASE
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyAVoYEeOwl4Ndzq4J4FsIKmoc8zyzRtodQ",
@@ -24,7 +24,7 @@ const DEFAULT_DISKON = 10;
 let currentUser = null;
 let selectedMember = null;
 let scannerInstance = null;
-let settings = { tarif_motor: 1000, tarif_mobil: 3000, diskon: 10 };
+let settings = { tarif_motor: 1000, tarif_mobil: 3000, diskon: 10, biaya_motor: 30000, biaya_mobil: 90000 };
 
 // ==========================================
 // UTILITIES
@@ -97,15 +97,82 @@ function closeModal() {
 }
 
 // ==========================================
-// AUTH
+// AUTH & SESSION PERSISTENCE
 // ==========================================
+function saveSession(user) {
+    const sessionData = {
+        username: user.username,
+        role: user.role,
+        loginTime: new Date().getTime(),
+        expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000) // 24 jam
+    };
+    localStorage.setItem('parkir_session', JSON.stringify(sessionData));
+}
+
+function loadSession() {
+    const sessionStr = localStorage.getItem('parkir_session');
+    if (!sessionStr) return null;
+    
+    try {
+        const session = JSON.parse(sessionStr);
+        if (session.expiresAt && session.expiresAt > new Date().getTime()) {
+            return session;
+        } else {
+            localStorage.removeItem('parkir_session');
+            return null;
+        }
+    } catch (e) {
+        localStorage.removeItem('parkir_session');
+        return null;
+    }
+}
+
+function clearSession() {
+    localStorage.removeItem('parkir_session');
+}
+
+function checkAuth() {
+    const session = loadSession();
+    if (session) {
+        currentUser = { 
+            username: session.username, 
+            role: session.role 
+        };
+        
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').classList.add('active');
+        document.getElementById('userName').textContent = session.username;
+        document.getElementById('userAvatar').textContent = session.username[0].toUpperCase();
+        document.getElementById('userRole').textContent = session.role.toUpperCase();
+        document.getElementById('greetingText').textContent = `${greeting()}, ${session.username}!`;
+        document.getElementById('todayDate').textContent = formatTanggal(new Date());
+        
+        initApp();
+        console.log('✅ Auto-login berhasil dari session tersimpan');
+        return true;
+    }
+    return false;
+}
+
+// ✅ INI FUNGSI YANG SEMBELUMNYA HILANG!
 async function initDefaultUsers() {
     const snap = await db.ref('users').once('value');
     if (!snap.exists()) {
         await db.ref('users').set({
-            admin: { username: 'admin', password: hashPassword('admin123'), role: 'admin' },
-            operator: { username: 'operator', password: hashPassword('op123'), role: 'operator' }
+            admin: { 
+                username: 'admin', 
+                password: hashPassword('admin123'), 
+                role: 'admin' 
+            },
+            operator: { 
+                username: 'operator', 
+                password: hashPassword('op123'), 
+                role: 'operator' 
+            }
         });
+        console.log('✅ Default users created: admin/admin123, operator/op123');
+    } else {
+        console.log('ℹ️ Users already exist in database');
     }
 }
 
@@ -133,6 +200,8 @@ async function doLogin() {
     }
     
     currentUser = user;
+    saveSession(user); // ✅ SIMPAN SESSION
+    
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
     document.getElementById('userName').textContent = user.username;
@@ -154,22 +223,22 @@ function quickLogin(u, p) {
 function doLogout() {
     if (!confirm('Yakin ingin logout?')) return;
     currentUser = null;
+    clearSession(); // ✅ HAPUS SESSION
+    
     if (scannerInstance) { try { scannerInstance.stop(); } catch(e){} }
     document.getElementById('mainApp').classList.remove('active');
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('loginPass').value = '';
+    document.getElementById('loginUser').value = '';
 }
 
 // ==========================================
 // NAVIGATION
 // ==========================================
 function showPage(pageId, el) {
-    // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    // Show target page
     document.getElementById('page-' + pageId).classList.add('active');
     
-    // Update active state for BOTH sidebar and mobile bottom nav
     document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
       
@@ -181,12 +250,10 @@ function showPage(pageId, el) {
     };
     document.getElementById('pageTitle').textContent = titles[pageId] || 'Dashboard';
     
-    // Stop scanner jika pindah dari scanner
     if (pageId !== 'scanner' && scannerInstance) {
         try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
     }
     
-    // Load data per page
     if (pageId === 'dashboard') refreshDashboard();
     if (pageId === 'dataMember') renderMembers();
     if (pageId === 'cetakKartu') renderCetak();
@@ -197,7 +264,6 @@ function showPage(pageId, el) {
     if (pageId === 'scanner') startScanner();
     if (pageId === 'daftarMember') loadHargaMember();
     
-    // Close sidebar on mobile
     if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -253,19 +319,29 @@ function renderRecentActivity(parkirData) {
 async function cekMemberMasuk() {
     const nik = sanitize(document.getElementById('inNik').value);
     const info = document.getElementById('inInfo');
-    if (!nik) { info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--accent-gold)'; info.textContent='⚠ Masukkan NIK terlebih dahulu'; return; }
+    if (!nik) { 
+        info.style.display='block'; 
+        info.style.background='rgba(245,158,11,0.15)'; 
+        info.style.color='var(--accent-gold)'; 
+        info.textContent='⚠ Masukkan NIK terlebih dahulu'; 
+        return; 
+    }
     
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
     if (!snap.exists()) {
         selectedMember = null;
-        info.style.display='block'; info.style.background='rgba(239,68,68,0.15)'; info.style.color='var(--danger)';
+        info.style.display='block'; 
+        info.style.background='rgba(239,68,68,0.15)'; 
+        info.style.color='var(--danger)';
         info.textContent='❌ Bukan member — silakan isi data manual';
         return;
     }
     const m = Object.values(snap.val())[0];
     if (m.tgl_berlaku && new Date(m.tgl_berlaku) < new Date()) {
         selectedMember = null;
-        info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--accent-gold)';
+        info.style.display='block'; 
+        info.style.background='rgba(245,158,11,0.15)'; 
+        info.style.color='var(--accent-gold)';
         info.textContent='⚠️ Masa berlaku member habis! Perpanjang dulu.';
         return;
     }
@@ -273,7 +349,9 @@ async function cekMemberMasuk() {
     document.getElementById('inNama').value = m.nama;
     document.getElementById('inPlat').value = m.nomor_kendaraan;
     document.getElementById('inJenis').value = m.jenis_kendaraan;
-    info.style.display='block'; info.style.background='rgba(16,185,129,0.15)'; info.style.color='var(--success)';
+    info.style.display='block'; 
+    info.style.background='rgba(16,185,129,0.15)'; 
+    info.style.color='var(--success)';
     info.innerHTML = `✅ <strong>MEMBER ${m.nomor_member}</strong> | Saldo ${formatRupiah(m.saldo)} | Diskon ${settings.diskon}%`;
 }
 
@@ -286,7 +364,6 @@ async function prosesMasuk() {
     if (!nik || !nama || !plat) return toast('NIK, Nama, dan Nomor Polisi wajib diisi','error');
     if (!jenis) return toast('Pilih jenis kendaraan','error');
     
-    // Cek duplikat
     const cekSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(nik).once('value');
     if (cekSnap.exists()) return toast('Kendaraan dengan NIK ini sudah parkir','error');
     
@@ -319,7 +396,6 @@ async function prosesMasuk() {
     </div>`;
     showModal('Kartu Parkir', html);
     
-    // Reset form
     ['inNik','inNama','inPlat'].forEach(id => document.getElementById(id).value='');
     document.getElementById('inJenis').value = '';
     document.getElementById('inInfo').style.display = 'none';
@@ -368,7 +444,6 @@ async function doKeluar(kode) {
         }
     }
     
-    // Simpan ke history
     const historyData = {
         ...data,
         waktu_keluar: tKeluar.toISOString().replace('T',' ').substring(0,19),
@@ -380,7 +455,6 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    // Tampilkan struk
     const tag = data.is_member ? '🎖️ MEMBER' : '👤 REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
     let struk = `<div class="struk">
@@ -416,20 +490,17 @@ function startScanner() {
             document.getElementById('scanStatus').style.color = 'var(--accent-teal)';
             try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
             
-            // Cek apakah ini NIK member atau kode tiket
             const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
             if (memberSnap.exists()) {
-                // NIK member - proses masuk
                 const m = Object.values(memberSnap.val())[0];
                 document.getElementById('inNik').value = m.nik;
                 document.getElementById('inNama').value = m.nama;
                 document.getElementById('inPlat').value = m.nomor_kendaraan;
                 document.getElementById('inJenis').value = m.jenis_kendaraan;
                 selectedMember = m;
-                showPage('masuk', document.querySelector('[onclick*=masuk]'));
+                showPage('masuk', document.querySelector('[onclick*="masuk"]'));
                 toast('Member terdeteksi! Silakan proses masuk', 'success');
             } else {
-                // Kode tiket - proses keluar
                 await doKeluar(text.toUpperCase());
             }
         },
@@ -453,7 +524,7 @@ async function prosesScanManual() {
         document.getElementById('inPlat').value = m.nomor_kendaraan;
         document.getElementById('inJenis').value = m.jenis_kendaraan;
         selectedMember = m;
-        showPage('masuk', document.querySelector('[onclick*=masuk]'));
+        showPage('masuk', document.querySelector('[onclick*="masuk"]'));
         toast('Member terdeteksi!', 'success');
     } else {
         await doKeluar(val);
@@ -480,7 +551,6 @@ async function daftarMember() {
     if (!isValidNIK(nik)) return toast('NIK harus 10-20 digit angka','error');
     if (!jenis) return toast('Pilih jenis kendaraan','error');
     
-    // Cek duplikat NIK
     const cek = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
     if (cek.exists()) return toast('NIK sudah terdaftar sebagai member','error');
     
@@ -512,7 +582,6 @@ async function daftarMember() {
         </div>
     `);
     
-    // Reset form
     ['dmNik','dmNama','dmAlamat','dmTelp','dmPlat'].forEach(id => document.getElementById(id).value='');
     document.getElementById('dmJenis').value = '';
 }
@@ -622,7 +691,6 @@ async function renderCetak() {
         </div>
     `).join('');
     
-    // Generate QR codes
     setTimeout(() => {
         filtered.forEach((m, i) => {
             const el = document.getElementById('qr-' + i);
@@ -916,6 +984,15 @@ updateClock();
 
 // Init default users
 initDefaultUsers();
+
+// AUTO-CHECK SESSION saat halaman dimuat
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (!checkAuth()) {
+            console.log('ℹ️ Tidak ada session aktif, silakan login');
+        }
+    }, 500);
+});
 
 // Close modal on overlay click
 document.getElementById('modal').addEventListener('click', e => {
