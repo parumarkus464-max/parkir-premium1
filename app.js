@@ -164,11 +164,15 @@ function doLogout() {
 // NAVIGATION
 // ==========================================
 function showPage(pageId, el) {
+    // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    // Show target page
     document.getElementById('page-' + pageId).classList.add('active');
-    if (el) el.classList.add('active');
     
+    // Update active state for BOTH sidebar and mobile bottom nav
+    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+      
     const titles = {
         dashboard:'Dashboard',masuk:'Kendaraan Masuk',keluar:'Kendaraan Keluar',
         scanner:'Scan QR',daftarMember:'Daftar Member',dataMember:'Data Member',
@@ -916,4 +920,4 @@ initDefaultUsers();
 // Close modal on overlay click
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target.id === 'modal') closeModal();
-});        
+});
