@@ -425,8 +425,13 @@ async function doKeluar(kode) {
     const diffMs = tKeluar - tMasuk;
     const jam = Math.max(1, Math.ceil(diffMs / 3600000));
     
+    // Ambil tarif dasar dari Settings
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
+    
+    // ✅ PENTING: Hanya member yang dapat diskon, non-member diskon = 0
     const diskonPersen = data.is_member ? (settings.diskon || 0) : 0;
+    
+    // Hitung potongan dan tarif akhir
     const potongan = Math.round(tarifDasar * (diskonPersen / 100));
     const tarif = tarifDasar - potongan;
     const biaya = jam * tarif;
@@ -500,7 +505,6 @@ async function doKeluar(kode) {
     showModal('Struk Parkir', struk);
 }
 
-// Fungsi untuk cetak struk
 function cetakStruk() {
     const strukContent = document.getElementById('struk-content');
     if (!strukContent) return;
