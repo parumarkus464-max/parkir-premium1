@@ -423,19 +423,28 @@ async function doKeluar(kode) {
     const tMasuk = new Date(data.waktu_masuk);
     const tKeluar = new Date();
     const diffMs = tKeluar - tMasuk;
+    
+    // 1. ATURAN WAKTU: Minimal 1 Jam (Math.max(1, ...))
     const jam = Math.max(1, Math.ceil(diffMs / 3600000));
     
-    // Ambil tarif dasar dari Settings
+    // 2. AMBIL TARIF DASAR DARI SETTINGS
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
     
-    // ✅ PENTING: Hanya member yang dapat diskon, non-member diskon = 0
-    const diskonPersen = data.is_member ? (settings.diskon || 0) : 0;
+    // 3. LOGIKA DISKON (Hanya Member yang dapat diskon)
+    let diskonPersen = 0;
+    let tarifAkhir = tarifDasar;
+    let potongan = 0;
+
+    if (data.is_member) {
+        diskonPersen = settings.diskon || 0;
+        potongan = Math.round(tarifDasar * (diskonPersen / 100));
+        tarifAkhir = tarifDasar - potongan;
+    }
     
-    // Hitung potongan dan tarif akhir
-    const potongan = Math.round(tarifDasar * (diskonPersen / 100));
-    const tarif = tarifDasar - potongan;
-    const biaya = jam * tarif;
+    // 4. TOTAL BAYAR
+    const biaya = jam * tarifAkhir;
     
+    // Proses Saldo Member
     let saldoAkhir = null;
     if (data.is_member && data.nomor_member) {
         const mSnap = await db.ref('members').orderByChild('nomor_member').equalTo(data.nomor_member).once('value');
@@ -450,12 +459,13 @@ async function doKeluar(kode) {
         }
     }
     
+    // Simpan ke History
     const historyData = {
         ...data,
         waktu_keluar: tKeluar.toISOString().replace('T',' ').substring(0,19),
         waktu_keluar_date: tKeluar.toISOString().split('T')[0],
         lama_jam: jam, 
-        tarif_per_jam: tarif, 
+        tarif_per_jam: tarifAkhir, 
         diskon_persen: diskonPersen,
         total_biaya: biaya, 
         operator_keluar: currentUser.username,
@@ -464,7 +474,8 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
+    // Tampilan Struk
+    const tag = data.is_member ? '🏅 MEMBER' : ' REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
     
     let struk = `
@@ -479,15 +490,15 @@ async function doKeluar(kode) {
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${data.waktu_masuk}</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${historyData.waktu_keluar}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Lama Parkir</span><span>${jam} jam</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif/Jam</span><span>${formatRupiah(tarifDasar)}</span></div>
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:var(--success);"><span>Diskon (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : ''}
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Setelah Diskon</span><span>${formatRupiah(tarif)}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:green;"><span>Diskon Member (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:gray;"><span>Diskon</span><span>Tidak Ada (Reguler)</span></div>'}
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Akhir</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
         <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:16px;display:flex;justify-content:space-between;">
             <span>TOTAL BAYAR</span>
             <span style="color:${accent};">${formatRupiah(biaya)}</span>
         </div>
-        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Saldo Akhir</span><span style="color:var(--accent-teal);font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
+        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo Member</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
         <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
             Terima kasih 🙏<br>
             www.parkirpremium.id
@@ -505,6 +516,7 @@ async function doKeluar(kode) {
     showModal('Struk Parkir', struk);
 }
 
+// Fungsi Cetak Struk
 function cetakStruk() {
     const strukContent = document.getElementById('struk-content');
     if (!strukContent) return;
@@ -514,27 +526,16 @@ function cetakStruk() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Struk Parkir - ${new Date().toLocaleString('id-ID')}</title>
+            <title>Struk Parkir</title>
             <style>
-                @media print {
-                    body { margin: 0; padding: 20px; }
-                    .no-print { display: none; }
-                }
-                body { 
-                    font-family: 'Courier New', monospace; 
-                    max-width: 400px; 
-                    margin: 0 auto; 
-                    padding: 20px;
-                }
+                body { font-family: 'Courier New', monospace; max-width: 400px; margin: 0 auto; padding: 20px; }
+                @media print { body { margin: 0; padding: 10px; } }
             </style>
         </head>
         <body>
             ${strukContent.innerHTML}
             <script>
-                window.onload = function() {
-                    window.print();
-                    setTimeout(() => window.close(), 1000);
-                }
+                window.onload = function() { window.print(); setTimeout(() => window.close(), 500); }
             <\/script>
         </body>
         </html>
