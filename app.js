@@ -368,7 +368,7 @@ async function prosesMasuk() {
     if (cekSnap.exists()) return toast('Kendaraan dengan NIK ini sudah parkir','error');
     
     const kode = 'PK' + new Date().toISOString().replace(/[-:T]/g,'').substring(0,14) + nik.substring(nik.length-4);
-    const now = new Date().toISOString().replace('T',' ').substring(0,19);
+    const now = new Date().toISOString(); // Format ISO lengkap dengan 'T'
     
     const data = {
         nik, nama, nomor_kendaraan: plat, jenis_kendaraan: jenis,
@@ -420,31 +420,59 @@ async function doKeluar(kode) {
     const key = Object.keys(snap.val())[0];
     const data = snap.val()[key];
     
-    const tMasuk = new Date(data.waktu_masuk);
+    // PARSING WAKTU YANG AMAN (support semua browser)
+    let tMasuk = new Date(data.waktu_masuk);
+    
+    // Jika parsing gagal (NaN), coba format alternatif
+    if (isNaN(tMasuk.getTime())) {
+        // Coba ganti spasi dengan 'T' untuk format ISO
+        tMasuk = new Date(data.waktu_masuk.replace(' ', 'T'));
+    }
+    if (isNaN(tMasuk.getTime())) {
+        // Fallback: coba format lain
+        tMasuk = new Date(data.waktu_masuk.replace(' ', 'T') + 'Z');
+    }
+    if (isNaN(tMasuk.getTime())) {
+        return toast('Error: Format waktu masuk tidak valid', 'error');
+    }
+    
     const tKeluar = new Date();
+    
+    // Hitung selisih dalam milidetik
     const diffMs = tKeluar - tMasuk;
     
-    // 1. ATURAN WAKTU: Minimal 1 Jam (Math.max(1, ...))
-    const jam = Math.max(1, Math.ceil(diffMs / 3600000));
+    // Konversi ke jam
+    const diffHours = diffMs / 3600000;
     
-    // 2. AMBIL TARIF DASAR DARI SETTINGS
+    // Pembulatan: minimal 1 jam (dari 1 menit sudah dihitung 1 jam)
+    let jam = Math.ceil(diffHours);
+    if (jam < 1) jam = 1;
+    
+    // Debug log (bisa dilihat di Console browser F12)
+    console.log('=== PERHITUNGAN PARKIR ===');
+    console.log('Waktu Masuk:', tMasuk.toLocaleString('id-ID'));
+    console.log('Waktu Keluar:', tKeluar.toLocaleString('id-ID'));
+    console.log('Selisih (menit):', Math.round(diffMs / 60000));
+    console.log('Jam dihitung:', jam);
+    
+    // Ambil tarif dari Settings
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
     
-    // 3. LOGIKA DISKON (Hanya Member yang dapat diskon)
+    // Hitung diskon (hanya untuk member)
     let diskonPersen = 0;
     let tarifAkhir = tarifDasar;
     let potongan = 0;
-
+    
     if (data.is_member) {
         diskonPersen = settings.diskon || 0;
         potongan = Math.round(tarifDasar * (diskonPersen / 100));
         tarifAkhir = tarifDasar - potongan;
     }
     
-    // 4. TOTAL BAYAR
+    // Total biaya
     const biaya = jam * tarifAkhir;
     
-    // Proses Saldo Member
+    // Proses saldo member
     let saldoAkhir = null;
     if (data.is_member && data.nomor_member) {
         const mSnap = await db.ref('members').orderByChild('nomor_member').equalTo(data.nomor_member).once('value');
@@ -459,10 +487,10 @@ async function doKeluar(kode) {
         }
     }
     
-    // Simpan ke History
+    // Simpan ke history
     const historyData = {
         ...data,
-        waktu_keluar: tKeluar.toISOString().replace('T',' ').substring(0,19),
+        waktu_keluar: tKeluar.toISOString(),
         waktu_keluar_date: tKeluar.toISOString().split('T')[0],
         lama_jam: jam, 
         tarif_per_jam: tarifAkhir, 
@@ -474,7 +502,7 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    // Tampilan Struk
+    // Tampilkan struk
     const tag = data.is_member ? '🏅 MEMBER' : ' REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
     
@@ -488,17 +516,21 @@ async function doKeluar(kode) {
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Nama</span><span>${data.nama}</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${data.waktu_masuk}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${historyData.waktu_keluar}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${tMasuk.toLocaleString('id-ID')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${tKeluar.toLocaleString('id-ID')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;font-size:14px;font-weight:bold;background:#f0f0f0;margin:8px 0;border-radius:4px;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>
         ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:green;"><span>Diskon Member (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:gray;"><span>Diskon</span><span>Tidak Ada (Reguler)</span></div>'}
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Akhir</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
-        <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:16px;display:flex;justify-content:space-between;">
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Setelah Diskon</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
+        <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;">
             <span>TOTAL BAYAR</span>
             <span style="color:${accent};">${formatRupiah(biaya)}</span>
         </div>
-        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo Member</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
+        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
+        <div style="margin-top:16px;padding:12px;background:#f9f9f9;border-radius:8px;font-size:11px;color:#666;">
+            <strong>Keterangan:</strong><br>
+            ${jam} jam × ${formatRupiah(tarifAkhir)} = ${formatRupiah(biaya)}
+        </div>
         <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
             Terima kasih 🙏<br>
             www.parkirpremium.id
@@ -506,7 +538,7 @@ async function doKeluar(kode) {
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
         <button onclick="cetakStruk()" class="btn btn-primary" style="flex:1;padding:12px;background:var(--accent-teal);color:var(--bg-dark);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
-            🖨️ Cetak Struk
+            ️ Cetak Struk
         </button>
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);border-radius:8px;font-weight:bold;cursor:pointer;">
             Tutup
@@ -516,7 +548,6 @@ async function doKeluar(kode) {
     showModal('Struk Parkir', struk);
 }
 
-// Fungsi Cetak Struk
 function cetakStruk() {
     const strukContent = document.getElementById('struk-content');
     if (!strukContent) return;
