@@ -199,12 +199,6 @@ async function doLogin() {
     toast(`Selamat datang, ${user.nama || user.username}! (${user.role.toUpperCase()})`, 'success');
 }
 
-function quickLogin(u, p) {
-    document.getElementById('loginUser').value = u;
-    document.getElementById('loginPass').value = p;
-    doLogin();
-}
-
 function doLogout() {
     if (!confirm('Yakin ingin logout?')) return;
     currentUser = null;
@@ -215,6 +209,82 @@ function doLogout() {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('loginPass').value = '';
     document.getElementById('loginUser').value = '';
+}
+
+// ==========================================
+// MANAGE USERS (Admin Only)
+// ==========================================
+async function renderUserList() {
+    const snap = await db.ref('users').once('value');
+    const users = snap.val() || {};
+    const list = document.getElementById('userList');
+    
+    const userArray = Object.values(users);
+    
+    if (userArray.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">👥 Belum ada user</p>';
+        return;
+    }
+    
+    list.innerHTML = `
+        <div style="margin-top:16px;">
+            <h4 style="margin-bottom:12px;color:var(--text-primary);">Daftar User:</h4>
+            ${userArray.map(u => `
+                <div class="list-item" style="padding:12px;">
+                    <div class="list-item-info">
+                        <h4>👤 ${u.username}</h4>
+                        <p style="color:${u.role==='admin'?'var(--accent-gold)':u.role==='operator'?'var(--accent-blue)':'var(--success)'};font-weight:bold;">
+                            ${u.role.toUpperCase()}
+                        </p>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-sm btn-ghost" onclick="editUser('${u.username}')" title="Edit Password">✏️</button>
+                        ${u.username !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}')" title="Hapus">🗑️</button>` : ''}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function addUser() {
+    const username = sanitize(document.getElementById('newUsername').value);
+    const password = document.getElementById('newPassword').value;
+    const role = document.getElementById('newRole').value;
+    
+    if (!username || !password) return toast('Username dan password wajib diisi', 'error');
+    
+    const snap = await db.ref('users/' + username).once('value');
+    if (snap.exists()) return toast('Username sudah digunakan', 'error');
+    
+    await db.ref('users/' + username).set({
+        username: username,
+        password: hashPassword(password),
+        role: role,
+        nama: username,
+        createdAt: new Date().toISOString()
+    });
+    
+    toast(`✅ User ${username} (${role}) berhasil ditambahkan`, 'success');
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    renderUserList();
+}
+
+async function editUser(username) {
+    const newPassword = prompt(`Masukkan password baru untuk user ${username}:`);
+    if (!newPassword) return;
+    
+    await db.ref('users/' + username + '/password').set(hashPassword(newPassword));
+    toast(`✅ Password user ${username} berhasil diubah`, 'success');
+}
+
+async function deleteUser(username) {
+    if (!confirm(`Yakin ingin menghapus user ${username}?`)) return;
+    
+    await db.ref('users/' + username).remove();
+    toast(`✅ User ${username} berhasil dihapus`, 'success');
+    renderUserList();
 }
 
 // ==========================================
@@ -293,6 +363,9 @@ function applyRoleUI() {
     // Load data sesuai role
     if (role === 'member') {
         loadMemberPortal();
+    } else if (role === 'admin') {
+        refreshDashboard();
+        renderUserList();
     } else {
         refreshDashboard();
     }
@@ -304,7 +377,7 @@ function checkRoleAccess(pageId) {
     const role = currentUser.role;
     
     const roleAccess = {
-        'admin': ['dashboard','masuk','keluar','scanner','daftarMember','dataMember','cetakKartu','topup','parkirAktif','history','laporan','setting'],
+        'admin': ['dashboard','masuk','keluar','scanner','daftarMember','dataMember','cetakKartu','topup','parkirAktif','history','laporan','setting','manageUsers'],
         'operator': ['dashboard','masuk','keluar','scanner','parkirAktif'],
         'member': ['memberPortal','memberKartu','memberRiwayat']
     };
@@ -344,7 +417,7 @@ function showPage(pageId, el) {
         dashboard:'Dashboard',masuk:'Kendaraan Masuk',keluar:'Kendaraan Keluar',
         scanner:'Scan QR',daftarMember:'Daftar Member',dataMember:'Data Member',
         cetakKartu:'Cetak Kartu',topup:'Topup Saldo',parkirAktif:'Parkir Aktif',
-        history:'History',laporan:'Laporan',setting:'Pengaturan',
+        history:'History',laporan:'Laporan',setting:'Pengaturan',manageUsers:'Manage User',
         memberPortal:'Portal Saya',memberKartu:'Kartu Saya',memberRiwayat:'Riwayat Saya'
     };
     document.getElementById('pageTitle').textContent = titles[pageId] || 'Dashboard';
@@ -365,6 +438,7 @@ function showPage(pageId, el) {
     if (pageId === 'memberPortal') loadMemberPortal();
     if (pageId === 'memberKartu') renderMemberKartu();
     if (pageId === 'memberRiwayat') renderMemberRiwayat();
+    if (pageId === 'manageUsers' && currentUser.role === 'admin') renderUserList();
     
     if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
 }
@@ -864,6 +938,7 @@ async function daftarMember() {
     
     await db.ref('members').push(data);
     
+    // Auto-create user untuk member
     await db.ref('users/' + nik).set({
         username: nik,
         password: hashPassword(nik),
@@ -1308,6 +1383,9 @@ async function initApp() {
     await initDefaultSettings();
     if (currentUser && currentUser.role !== 'member') {
         refreshDashboard();
+        if (currentUser.role === 'admin') {
+            renderUserList();
+        }
     } else if (currentUser && currentUser.role === 'member') {
         loadMemberPortal();
     }
