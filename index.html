@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistem Parkir Premium v8.0 — Multi-Role</title>
+<title>Sistem Parkir Premium v9.0 — Multi-Role</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -188,14 +188,12 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
    MOBILE OPTIMIZATION (HP & Tablet)
    ========================================== */
 @media (max-width: 768px) {
-    /* Hide sidebar, show bottom nav */
     .sidebar { display: none !important; }
     .main { margin-left: 0 !important; padding-bottom: 90px !important; }
     .content { padding: 12px !important; }
     .menu-toggle { display: block !important; }
     .topbar { padding: 0 12px !important; }
     
-    /* Bottom Navigation */
     .app.active + .mobile-bottom-nav,
     .app.active ~ .mobile-bottom-nav {
         display: flex !important;
@@ -243,7 +241,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6));
     }
 
-    /* Login Screen */
     .login-container { 
         grid-template-columns: 1fr !important;
         border-radius: 0 !important;
@@ -257,13 +254,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     }
     .login-right h2 { font-size: 20px !important; }
 
-    /* Form Grid - Stack vertically on mobile */
     .form-grid { 
         grid-template-columns: 1fr !important;
         gap: 12px !important;
     }
     
-    /* Stats Grid - 2 columns */
     .stats-grid { 
         grid-template-columns: 1fr 1fr !important; 
         gap: 10px !important; 
@@ -297,7 +292,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .stat-card:nth-child(3) { order: 3; }
     .stat-card:nth-child(4) { order: 4; }
 
-    /* Menu Grid - 2 columns */
     .menu-grid { 
         grid-template-columns: repeat(2, 1fr) !important; 
         gap: 10px !important; 
@@ -317,7 +311,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 11px !important;
     }
 
-    /* Input Fields - Touch-friendly */
     .input-wrap { 
         min-height: 48px !important;
     }
@@ -325,7 +318,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .input-wrap input, 
     .input-wrap select { 
         padding: 14px 12px !important; 
-        font-size: 16px !important; /* Prevent zoom on iOS */
+        font-size: 16px !important;
     }
     
     .form-group label {
@@ -333,7 +326,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         margin-bottom: 6px !important;
     }
 
-    /* Buttons - Larger touch targets */
     .btn { 
         padding: 14px 16px !important; 
         font-size: 14px !important; 
@@ -347,7 +339,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 12px !important; 
     }
 
-    /* Cards */
     .card {
         padding: 16px !important;
         margin-bottom: 12px !important;
@@ -359,13 +350,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         margin-bottom: 12px !important;
     }
 
-    /* Scanner */
     .scanner-box { 
         max-width: 100% !important;
         border-radius: 14px !important;
     }
 
-    /* List Items */
     .list-item { 
         padding: 14px !important; 
         flex-direction: column !important; 
@@ -387,7 +376,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 12px !important;
     }
 
-    /* Modal - Better mobile handling */
     .modal { 
         margin: 16px !important; 
         max-height: 85vh !important; 
@@ -400,7 +388,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 16px !important;
     }
 
-    /* Topbar */
     .btn-logout { 
         width: 36px !important; 
         height: 36px !important; 
@@ -423,7 +410,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 16px !important;
     }
 
-    /* Welcome Banner */
     .welcome-banner {
         padding: 16px !important;
         margin-bottom: 16px !important;
@@ -441,7 +427,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 11px !important;
     }
 
-    /* Member Card Preview */
     .member-card-preview {
         max-width: 100% !important;
         padding: 16px !important;
@@ -451,33 +436,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         font-size: 16px !important;
     }
 
-    /* Badge */
     .badge {
         font-size: 9px !important;
         padding: 3px 8px !important;
     }
 
-    /* Role Table - Horizontal scroll */
-    .role-table-container {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    .role-table {
-        min-width: 500px !important;
-        font-size: 11px !important;
-    }
-    
-    .role-table thead th {
-        padding: 8px 6px !important;
-        font-size: 11px !important;
-    }
-    
-    .role-table tbody td {
-        padding: 8px 6px !important;
-    }
-
-    /* Toast - Better positioning */
     .toast {
         max-width: calc(100% - 32px) !important;
         left: 16px !important;
@@ -485,7 +448,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         top: 16px !important;
     }
 
-    /* Fix for iOS safe areas */
     @supports (padding-top: env(safe-area-inset-top)) {
         .login-screen {
             padding-top: env(safe-area-inset-top) !important;
@@ -493,174 +455,51 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     }
 }
 
-/* ==========================================
-   SMALL MOBILE (HP Kecil < 480px)
-   ========================================== */
 @media (max-width: 480px) {
-    .content { 
-        padding: 10px !important; 
-    }
-    
-    .stats-grid { 
-        gap: 8px !important; 
-    }
-    
-    .stat-card { 
-        padding: 10px 8px !important; 
-        min-height: 90px !important; 
-    }
-    
-    .stat-card .stat-value { 
-        font-size: 16px !important; 
-    }
-    
-    .stat-card .stat-label { 
-        font-size: 8px !important; 
-    }
-    
-    .stat-card .stat-icon { 
-        font-size: 20px !important; 
-    }
-    
-    .stat-card .stat-trend {
-        font-size: 8px !important;
-    }
-    
-    .menu-grid { 
-        gap: 8px !important; 
-    }
-    
-    .menu-tile { 
-        padding: 14px 8px !important; 
-    }
-    
-    .menu-tile .tile-icon { 
-        width: 44px !important;
-        height: 44px !important;
-        font-size: 20px !important;
-    }
-    
-    .menu-tile .tile-label {
-        font-size: 10px !important;
-    }
-    
-    .welcome-banner { 
-        padding: 14px !important; 
-    }
-    
-    .welcome-banner h2 { 
-        font-size: 16px !important; 
-    }
-    
-    .card {
-        padding: 14px !important;
-    }
-    
-    .card-title {
-        font-size: 13px !important;
-    }
-    
-    .btn {
-        padding: 12px 14px !important;
-        font-size: 13px !important;
-    }
-    
-    .input-wrap input,
-    .input-wrap select {
-        font-size: 15px !important;
-        padding: 12px 10px !important;
-    }
-    
-    .mobile-nav-item {
-        font-size: 9px !important;
-        padding: 3px 6px !important;
-    }
-    
-    .mobile-nav-item .icon {
-        font-size: 20px !important;
-    }
+    .content { padding: 10px !important; }
+    .stats-grid { gap: 8px !important; }
+    .stat-card { padding: 10px 8px !important; min-height: 90px !important; }
+    .stat-card .stat-value { font-size: 16px !important; }
+    .stat-card .stat-label { font-size: 8px !important; }
+    .stat-card .stat-icon { font-size: 20px !important; }
+    .stat-card .stat-trend { font-size: 8px !important; }
+    .menu-grid { gap: 8px !important; }
+    .menu-tile { padding: 14px 8px !important; }
+    .menu-tile .tile-icon { width: 44px !important; height: 44px !important; font-size: 20px !important; }
+    .menu-tile .tile-label { font-size: 10px !important; }
+    .welcome-banner { padding: 14px !important; }
+    .welcome-banner h2 { font-size: 16px !important; }
+    .card { padding: 14px !important; }
+    .card-title { font-size: 13px !important; }
+    .btn { padding: 12px 14px !important; font-size: 13px !important; }
+    .input-wrap input, .input-wrap select { font-size: 15px !important; padding: 12px 10px !important; }
+    .mobile-nav-item { font-size: 9px !important; padding: 3px 6px !important; }
+    .mobile-nav-item .icon { font-size: 20px !important; }
 }
 
-/* ==========================================
-   TABLET (768px - 1024px)
-   ========================================== */
 @media (min-width: 769px) and (max-width: 1024px) {
-    .sidebar {
-        width: 200px !important;
-    }
-    
-    .main {
-        margin-left: 200px !important;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-    
-    .menu-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-    
-    .content {
-        padding: 20px !important;
-    }
+    .sidebar { width: 200px !important; }
+    .main { margin-left: 200px !important; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .content { padding: 20px !important; }
 }
 
-/* ==========================================
-   LANDSCAPE MODE (HP Horizontal)
-   ========================================== */
 @media (max-width: 768px) and (orientation: landscape) {
-    .login-container {
-        grid-template-columns: 1fr 1fr !important;
-    }
-    
-    .login-left {
-        display: flex !important;
-        padding: 30px !important;
-    }
-    
-    .login-logo {
-        width: 80px !important;
-        height: 80px !important;
-    }
-    
-    .login-left h1 {
-        font-size: 22px !important;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-    
-    .stat-card {
-        min-height: 80px !important;
-        padding: 10px !important;
-    }
-    
-    .stat-card .stat-value {
-        font-size: 16px !important;
-    }
+    .login-container { grid-template-columns: 1fr 1fr !important; }
+    .login-left { display: flex !important; padding: 30px !important; }
+    .login-logo { width: 80px !important; height: 80px !important; }
+    .login-left h1 { font-size: 22px !important; }
+    .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .stat-card { min-height: 80px !important; padding: 10px !important; }
+    .stat-card .stat-value { font-size: 16px !important; }
 }
 
-/* ==========================================
-   PRINT OPTIMIZATION
-   ========================================== */
 @media print {
     body * { visibility: hidden; }
     .print-area, .print-area * { visibility: visible; }
-    .print-area {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-    }
-    
-    .mobile-bottom-nav,
-    .sidebar,
-    .topbar,
-    .btn-logout {
-        display: none !important;
-    }
+    .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    .mobile-bottom-nav, .sidebar, .topbar, .btn-logout { display: none !important; }
 }
 </style>
 </head>
@@ -681,7 +520,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             </div>
             <h1>PARKIR PREMIUM</h1>
             <p style="font-size:12px;margin-top:4px;">Kabupaten Ende</p>
-            <p style="margin-top:20px;">Enterprise Parking Management System<br>v8.0 — Multi-Role Edition</p>
+            <p style="margin-top:20px;">Enterprise Parking Management System<br>v9.0 — Multi-Role Edition</p>
             <div style="margin-top:30px;color:rgba(255,255,255,0.7);font-size:12px;text-align:left;">
                 <p>✨ Multi-Role: Admin, Operator, Member</p>
                 <p>✨ Scan QR dengan kamera</p>
@@ -722,32 +561,16 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 </div>
                 <div>
                     <h3 style="font-size:14px;margin:0;">PARKIR PREMIUM</h3>
-                    <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v8.0</p>
+                    <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v9.0</p>
                 </div>
             </div>
         </div>
         
-        <div class="nav-section" id="sidebarMenu">
-            <div class="nav-item" data-role="admin" onclick="showPage('dashboard',this)"><span class="icon">📊</span>Dashboard</div>
-            <div class="nav-item" data-role="admin,operator" onclick="showPage('masuk',this)"><span class="icon"></span>Kendaraan Masuk</div>
-            <div class="nav-item" data-role="admin,operator" onclick="showPage('keluar',this)"><span class="icon">🔑</span>Kendaraan Keluar</div>
-            <div class="nav-item" data-role="admin,operator" onclick="showPage('scanner',this)"><span class="icon">📷</span>Scan QR</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('daftarMember',this)"><span class="icon">👤</span>Daftar Member</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('dataMember',this)"><span class="icon">🗂️</span>Data Member</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('cetakKartu',this)"><span class="icon">🧾</span>Cetak Kartu</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('topup',this)"><span class="icon">💰</span>Topup Saldo</div>
-            <div class="nav-item" data-role="admin,operator" onclick="showPage('parkirAktif',this)"><span class="icon">🚦</span>Parkir Aktif</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('history',this)"><span class="icon">⏱️</span>History</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('laporan',this)"><span class="icon">📑</span>Laporan</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('setting',this)"><span class="icon">⚙️</span>Pengaturan</div>
-            <div class="nav-item" data-role="admin" onclick="showPage('manageUsers',this)"><span class="icon">👥</span>Manage User</div>
-            <div class="nav-item" data-role="member" onclick="showPage('memberPortal',this)"><span class="icon">🏠</span>Portal Saya</div>
-            <div class="nav-item" data-role="member" onclick="showPage('memberKartu',this)"><span class="icon">🎫</span>Kartu Saya</div>
-            <div class="nav-item" data-role="member" onclick="showPage('memberRiwayat',this)"><span class="icon">📜</span>Riwayat Saya</div>
-        </div>
+        <!-- Menu Sidebar akan di-generate otomatis oleh JavaScript -->
+        <div class="nav-section" id="sidebarMenu"></div>
         
         <div class="nav-section">
-            <div class="nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon"></span>Logout</div>
+            <div class="nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon">🚪</span>Logout</div>
         </div>
     </aside>
 
@@ -765,7 +588,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     <span id="userName">Admin</span>
                     <span class="role-badge" id="userRoleBadge">ADMIN</span>
                 </div>
-                <button class="btn-logout" onclick="doLogout()" title="Logout"></button>
+                <button class="btn-logout" onclick="doLogout()" title="Logout">🚪</button>
             </div>
         </div>
         
@@ -776,7 +599,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     <h2 id="greetingText">Selamat Pagi, Admin!</h2>
                     <p>Kelola sistem parkir Anda dari satu dashboard terpadu</p>
                     <div class="welcome-info">
-                        <span> <span id="todayDate"></span></span>
+                        <span>📅 <span id="todayDate"></span></span>
                         <span>👤 Role: <span id="userRole">ADMIN</span></span>
                     </div>
                 </div>
@@ -809,20 +632,21 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 </div>
 
                 <div class="card-title" style="margin:24px 0 12px;">⚡ Aksi Cepat</div>
-                <div class="menu-grid">
-                    <div class="menu-tile" onclick="showPage('masuk',document.querySelector('[onclick*=masuk]'))">
+                <div class="menu-grid" id="quickActions">
+                    <!-- Quick actions akan di-generate otomatis -->
+                    <div class="menu-tile" onclick="showPage('masuk')">
                         <div class="tile-icon" style="background:rgba(59,130,246,0.15);color:var(--accent-blue);">🚘</div>
                         <div class="tile-label">Masuk</div>
                     </div>
-                    <div class="menu-tile" onclick="showPage('keluar',document.querySelector('[onclick*=keluar]'))">
+                    <div class="menu-tile" onclick="showPage('keluar')">
                         <div class="tile-icon" style="background:rgba(239,68,68,0.15);color:var(--danger);">🚙</div>
                         <div class="tile-label">Keluar</div>
                     </div>
-                    <div class="menu-tile" onclick="showPage('scanner',document.querySelector('[onclick*=scanner]'))">
+                    <div class="menu-tile" onclick="showPage('scanner')">
                         <div class="tile-icon" style="background:rgba(6,182,212,0.15);color:var(--accent-cyan);">📷</div>
                         <div class="tile-label">Scan QR</div>
                     </div>
-                    <div class="menu-tile" onclick="showPage('daftarMember',document.querySelector('[onclick*=daftarMember]'))">
+                    <div class="menu-tile" onclick="showPage('daftarMember')">
                         <div class="tile-icon" style="background:rgba(139,92,246,0.15);color:var(--accent-purple);">👤</div>
                         <div class="tile-label">Daftar</div>
                     </div>
@@ -834,15 +658,15 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 </div>
             </div>
 
-                        <!-- MANAGE USERS (Admin Only) -->
+            <!-- MANAGE USERS -->
             <div class="page" id="page-manageUsers">
                 <div class="card">
-                    <div class="card-title"><span class="icon">👥</span>Manage User & Password</div>
+                    <div class="card-title"><span class="icon">👥</span>Manage User & Petugas</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
                         <div class="form-group">
                             <label>Username</label>
                             <div class="input-wrap">
-                                <span class="icon"></span>
+                                <span class="icon">👤</span>
                                 <input type="text" id="newUsername" placeholder="Username (tanpa spasi)">
                             </div>
                         </div>
@@ -927,7 +751,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <!-- MEMBER KARTU -->
             <div class="page" id="page-memberKartu">
                 <div class="card">
-                    <div class="card-title"><span class="icon"></span>Kartu Member Saya</div>
+                    <div class="card-title"><span class="icon">🎫</span>Kartu Member Saya</div>
                     <div id="memberKartuPreview"></div>
                     <button class="btn btn-purple" onclick="cetakKartuSaya()" style="margin-top:16px;">🖨️ Cetak Kartu</button>
                 </div>
@@ -997,7 +821,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <!-- SCANNER -->
             <div class="page" id="page-scanner">
                 <div class="card">
-                    <div class="card-title"><span class="icon"></span>Scan QR Code</div>
+                    <div class="card-title"><span class="icon">📷</span>Scan QR Code</div>
                     <div id="reader" class="scanner-box"></div>
                     <div id="scanStatus" style="text-align:center;margin-top:12px;color:var(--success);">Arahkan kamera ke QR Code</div>
                     <div class="form-group" style="margin-top:16px;">
@@ -1157,7 +981,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                         <div class="input-wrap"><input type="number" id="setMotor" placeholder="1000"></div>
                     </div>
                     <div class="form-group">
-                        <label> Tarif Mobil / jam</label>
+                        <label>🚙 Tarif Mobil / jam</label>
                         <div class="input-wrap"><input type="number" id="setMobil" placeholder="3000"></div>
                     </div>
                     <div class="form-group">
@@ -1170,36 +994,19 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         </div>
     </div>
 
-    <!-- MOBILE BOTTOM NAV -->
-    <nav class="mobile-bottom-nav" id="mobileNav">
-        <a class="mobile-nav-item" data-role="admin" onclick="showPage('dashboard', this)">
-            <span class="icon">📊</span><span>Home</span>
-        </a>
-        <a class="mobile-nav-item" data-role="admin,operator" onclick="showPage('masuk', this)">
-            <span class="icon">🚪</span><span>Masuk</span>
-        </a>
-        <a class="mobile-nav-item" data-role="admin,operator" onclick="showPage('scanner', this)">
-            <span class="icon">📷</span><span>Scan</span>
-        </a>
-        <a class="mobile-nav-item" data-role="admin,operator" onclick="showPage('keluar', this)">
-            <span class="icon">🔑</span><span>Keluar</span>
-        </a>
-        <a class="mobile-nav-item" data-role="admin" onclick="showPage('manageUsers', this)">
-            <span class="icon">👥</span><span>User</span>
-        </a>
-        <a class="mobile-nav-item" data-role="member" onclick="showPage('memberPortal', this)">
-            <span class="icon">🏠</span><span>Portal</span>
-        </a>
-        <a class="mobile-nav-item" data-role="member" onclick="showPage('memberKartu', this)">
-            <span class="icon">🎫</span><span>Kartu</span>
-        </a>
-        <a class="mobile-nav-item" data-role="member" onclick="showPage('memberRiwayat', this)">
-            <span class="icon">📜</span><span>Riwayat</span>
-        </a>
-        <a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);">
-            <span class="icon">🚪</span><span>Logout</span>
-        </a>
-    </nav>
+    <!-- Bottom Navigation akan di-generate otomatis oleh JavaScript -->
+    <nav class="mobile-bottom-nav" id="mobileNav"></nav>
+</div>
+
+<!-- MODAL UTAMA (untuk Struk, Kartu Parkir, Detail, dll) -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Info</h3>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div id="modalContent"></div>
+    </div>
 </div>
 
 <!-- EDIT USER MODAL -->
