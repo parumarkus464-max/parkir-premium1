@@ -65,7 +65,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .btn-ghost{background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);}
 .btn-ghost:hover{background:rgba(0,229,160,0.1);}
 .btn-sm{padding:8px 14px;font-size:12px;}
-.quick-login{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
 
 .app{display:none;min-height:100vh;position:relative;z-index:1;}
 .app.active{display:flex;}
@@ -185,104 +184,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 
 .mobile-bottom-nav{display:none;}
 
-/* ==========================================
-   TABEL PERBEDAAN ROLE
-   ========================================== */
-.role-table-container {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 24px;
-    overflow-x: auto;
-}
-
-.role-table-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.role-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-    min-width: 600px;
-}
-
-.role-table thead th {
-    padding: 12px 10px;
-    text-align: center;
-    font-weight: 700;
-    font-size: 14px;
-    border-bottom: 2px solid var(--border);
-}
-
-.role-table thead th:first-child {
-    text-align: left;
-    width: 35%;
-}
-
-.role-table thead th:nth-child(2) {
-    background: rgba(245, 158, 11, 0.15);
-    color: var(--accent-gold);
-    border-radius: 8px 8px 0 0;
-}
-
-.role-table thead th:nth-child(3) {
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--accent-blue);
-    border-radius: 8px 8px 0 0;
-}
-
-.role-table thead th:nth-child(4) {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--success);
-    border-radius: 8px 8px 0 0;
-}
-
-.role-table tbody td {
-    padding: 10px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-    color: var(--text-secondary);
-}
-
-.role-table tbody td:first-child {
-    text-align: left;
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
-.role-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.role-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.role-icon-yes {
-    color: var(--success);
-    font-size: 18px;
-}
-
-.role-icon-no {
-    color: var(--danger);
-    font-size: 18px;
-}
-
-.role-note {
-    font-size: 10px;
-    color: var(--text-muted);
-    display: block;
-    margin-top: 2px;
-}
-
 @media (max-width: 768px) {
     .sidebar { display: none !important; }
     .main { margin-left: 0 !important; padding-bottom: 85px !important; }
@@ -373,10 +274,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .btn-logout { width: 34px; height: 34px; font-size: 16px; }
     .user-badge span { display: none; }
     .clock { font-size: 11px; }
-    
-    .role-table { font-size: 11px; }
-    .role-table thead th { padding: 8px 6px; font-size: 12px; }
-    .role-table tbody td { padding: 8px 6px; }
 }
 
 @media(max-width:480px){
@@ -428,21 +325,17 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 <label>Username</label>
                 <div class="input-wrap">
                     <span class="icon">👤</span>
-                    <input type="text" id="loginUser" placeholder="Username / NIK">
+                    <input type="text" id="loginUser" placeholder="Masukkan username">
                 </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <div class="input-wrap">
                     <span class="icon">🔒</span>
-                    <input type="password" id="loginPass" placeholder="••••••••">
+                    <input type="password" id="loginPass" placeholder="Masukkan password">
                 </div>
             </div>
             <button class="btn btn-primary" onclick="doLogin()">MASUK</button>
-            <div class="quick-login">
-                <button class="btn btn-ghost btn-sm" onclick="quickLogin('admin','admin123')">🔑 Admin</button>
-                <button class="btn btn-ghost btn-sm" onclick="quickLogin('operator','op123')"> Operator</button>
-            </div>
             <p style="text-align:center;margin-top:20px;font-size:11px;color:var(--text-muted);">Member login dengan NIK & password NIK</p>
         </div>
     </div>
@@ -477,6 +370,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="nav-item" data-role="admin" onclick="showPage('history',this)"><span class="icon">⏱️</span>History</div>
             <div class="nav-item" data-role="admin" onclick="showPage('laporan',this)"><span class="icon">📑</span>Laporan</div>
             <div class="nav-item" data-role="admin" onclick="showPage('setting',this)"><span class="icon">⚙️</span>Pengaturan</div>
+            <div class="nav-item" data-role="admin" onclick="showPage('manageUsers',this)"><span class="icon">👥</span>Manage User</div>
             <div class="nav-item" data-role="member" onclick="showPage('memberPortal',this)"><span class="icon">🏠</span>Portal Saya</div>
             <div class="nav-item" data-role="member" onclick="showPage('memberKartu',this)"><span class="icon">🎫</span>Kartu Saya</div>
             <div class="nav-item" data-role="member" onclick="showPage('memberRiwayat',this)"><span class="icon">📜</span>Riwayat Saya</div>
@@ -568,96 +462,42 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 <div class="card" id="recentActivity">
                     <p style="color:var(--text-muted);text-align:center;">Memuat data...</p>
                 </div>
+            </div>
 
-                <!-- TABEL PERBEDAAN ROLE -->
-                <div class="role-table-container">
-                    <div class="role-table-title">
-                        <span>📊</span> Perbedaan Tampilan Per Role:
+            <!-- MANAGE USERS (Admin Only) -->
+            <div class="page" id="page-manageUsers">
+                <div class="card">
+                    <div class="card-title"><span class="icon">👥</span>Manage User & Password</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+                        <div class="form-group">
+                            <label>Username Baru</label>
+                            <div class="input-wrap">
+                                <span class="icon">👤</span>
+                                <input type="text" id="newUsername" placeholder="Username">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <div class="input-wrap">
+                                <span class="icon">🔒</span>
+                                <input type="password" id="newPassword" placeholder="Password">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <div class="input-wrap">
+                                <select id="newRole">
+                                    <option value="admin">Admin</option>
+                                    <option value="operator">Operator</option>
+                                    <option value="member">Member</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="display:flex;align-items:flex-end;">
+                            <button class="btn btn-success" onclick="addUser()" style="width:100%;">➕ Tambah User</button>
+                        </div>
                     </div>
-                    <table class="role-table">
-                        <thead>
-                            <tr>
-                                <th>Menu/Feature</th>
-                                <th>👑 Admin</th>
-                                <th>👷 Operator</th>
-                                <th>👤 Member</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Dashboard</td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Full stats</span></td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Full stats</span></td>
-                                <td><span class="role-icon-no">❌</span><span class="role-note">Ganti Member Portal</span></td>
-                            </tr>
-                            <tr>
-                                <td>Kendaraan Masuk</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>Kendaraan Keluar</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>Scan QR</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>Daftar Member</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>Data Member</td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Semua data</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Data sendiri</span></td>
-                            </tr>
-                            <tr>
-                                <td>Cetak Kartu</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Kartu sendiri</span></td>
-                            </tr>
-                            <tr>
-                                <td>Topup</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Topup sendiri</span></td>
-                            </tr>
-                            <tr>
-                                <td>Parkir Aktif</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>History</td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Semua</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-yes">✅</span><span class="role-note">Riwayat sendiri</span></td>
-                            </tr>
-                            <tr>
-                                <td>Laporan</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                            <tr>
-                                <td>Setting</td>
-                                <td><span class="role-icon-yes">✅</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                                <td><span class="role-icon-no">❌</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div id="userList"></div>
                 </div>
             </div>
 
@@ -969,8 +809,8 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
         <a class="mobile-nav-item" data-role="admin,operator" onclick="showPage('keluar', this)">
             <span class="icon">🔑</span><span>Keluar</span>
         </a>
-        <a class="mobile-nav-item" data-role="admin" onclick="showPage('dataMember', this)">
-            <span class="icon">👥</span><span>Member</span>
+        <a class="mobile-nav-item" data-role="admin" onclick="showPage('manageUsers', this)">
+            <span class="icon">👥</span><span>User</span>
         </a>
         <a class="mobile-nav-item" data-role="member" onclick="showPage('memberPortal', this)">
             <span class="icon">🏠</span><span>Portal</span>
