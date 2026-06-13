@@ -127,18 +127,21 @@ function clearSession() {
 function checkAuth() {
     const session = loadSession();
     if (session) {
+        // Pastikan role terbaca dengan benar
         currentUser = { 
             username: session.username, 
-            role: session.role,
-            nama: session.nama
+            role: (session.role || 'member').toString().toLowerCase().trim(),
+            nama: session.nama || session.username
         };
+        
+        console.log(' Auto-login - currentUser:', currentUser);
         
         applyRoleUI();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').classList.add('active');
         
         initApp();
-        console.log('✅ Auto-login berhasil:', session.username, 'role:', session.role);
+        console.log('✅ Auto-login berhasil:', currentUser.username, 'role:', currentUser.role);
         return true;
     }
     return false;
@@ -184,19 +187,38 @@ async function doLogin() {
     
     const snap = await db.ref('users/' + u).once('value');
     const user = snap.val();
+    
+    console.log(' Login attempt - username:', u, '| user data:', user);
+    
     if (!user || user.password !== hashPassword(p)) {
         return toast('Username atau password salah', 'error');
     }
     
-    currentUser = user;
-    saveSession(user);
+    // Pastikan role ada dan valid
+    if (!user.role) {
+        user.role = 'member'; // Default fallback
+        console.log('⚠️ Role tidak ada, default ke member');
+    }
+    
+    // Simpan ke currentUser dengan struktur yang jelas
+    currentUser = {
+        username: user.username || u,
+        password: user.password,
+        role: user.role.toString().toLowerCase().trim(),
+        nama: user.nama || user.username || u,
+        createdAt: user.createdAt || new Date().toISOString()
+    };
+    
+    console.log('✅ currentUser set:', currentUser);
+    
+    saveSession(currentUser);
     
     applyRoleUI();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
     
     initApp();
-    toast(`Selamat datang, ${user.nama || user.username}! (${user.role.toUpperCase()})`, 'success');
+    toast(`Selamat datang, ${currentUser.nama}! (${currentUser.role.toUpperCase()})`, 'success');
 }
 
 function doLogout() {
@@ -293,8 +315,12 @@ async function deleteUser(username) {
 function applyRoleUI() {
     if (!currentUser) return;
     
+    // PASTIKAN ROLE VALID
+    currentUser.role = (currentUser.role || 'member').toString().toLowerCase().trim();
+    
     const role = currentUser.role;
     const nama = currentUser.nama || currentUser.username;
+    console.log('🎨 applyRoleUI - role:', role, '| nama:', nama);
     
     // Update topbar
     document.getElementById('userName').textContent = nama;
@@ -372,9 +398,26 @@ function applyRoleUI() {
 }
 
 function checkRoleAccess(pageId) {
-    if (!currentUser) return false;
+    // Debug log untuk troubleshooting
+    console.log(' Check Access - pageId:', pageId, '| currentUser:', currentUser);
     
-    const role = currentUser.role;
+    if (!currentUser) {
+        console.log(' currentUser is null/undefined');
+        return false;
+    }
+    
+    // Pastikan role terbaca dengan benar (case-insensitive & trim)
+    const role = (currentUser.role || '').toString().toLowerCase().trim();
+    
+    console.log('📋 Role detected:', role);
+    
+    // Fallback jika role tidak dikenali
+    if (!['admin', 'operator', 'member'].includes(role)) {
+        console.log('⚠️ Role tidak dikenali, default ke member');
+        toast('️ Role tidak dikenali, silakan login ulang', 'error');
+        setTimeout(() => doLogout(), 2000);
+        return false;
+    }
     
     const roleAccess = {
         'admin': ['dashboard','masuk','keluar','scanner','daftarMember','dataMember','cetakKartu','topup','parkirAktif','history','laporan','setting','manageUsers'],
@@ -383,6 +426,8 @@ function checkRoleAccess(pageId) {
     };
     
     const allowed = roleAccess[role] || [];
+    
+    console.log('✅ Allowed pages:', allowed);
     
     if (!allowed.includes(pageId)) {
         const roleName = role === 'admin' ? 'Admin' : role === 'operator' ? 'Operator' : 'Member';
