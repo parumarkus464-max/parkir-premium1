@@ -240,7 +240,6 @@ async function renderUserList() {
     const snap = await db.ref('users').once('value');
     const users = snap.val() || {};
     const list = document.getElementById('userList');
-    
     const userArray = Object.values(users);
     
     if (userArray.length === 0) {
@@ -250,17 +249,15 @@ async function renderUserList() {
     
     list.innerHTML = `
         <div style="margin-top:16px;">
-            <h4 style="margin-bottom:12px;color:var(--text-primary);">Daftar User:</h4>
+            <h4 style="margin-bottom:12px;color:var(--text-primary);">Daftar Petugas & User:</h4>
             ${userArray.map(u => `
                 <div class="list-item" style="padding:12px;">
                     <div class="list-item-info">
-                        <h4>👤 ${u.username}</h4>
-                        <p style="color:${u.role==='admin'?'var(--accent-gold)':u.role==='operator'?'var(--accent-blue)':'var(--success)'};font-weight:bold;">
-                            ${u.role.toUpperCase()}
-                        </p>
+                        <h4>👤 ${u.nama || u.username}</h4>
+                        <p style="color:var(--text-muted);font-size:11px;">@${u.username} • <span style="color:${u.role==='admin'?'var(--accent-gold)':u.role==='operator'?'var(--accent-blue)':'var(--success)'};font-weight:bold;">${u.role.toUpperCase()}</span></p>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-sm btn-ghost" onclick="editUser('${u.username}')" title="Edit Password">✏️</button>
+                        <button class="btn btn-sm btn-ghost" onclick="openEditUser('${u.username}')" title="Edit Nama/Password">✏️</button>
                         ${u.username !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}')" title="Hapus">🗑️</button>` : ''}
                     </div>
                 </div>
@@ -271,41 +268,74 @@ async function renderUserList() {
 
 async function addUser() {
     const username = sanitize(document.getElementById('newUsername').value);
+    const fullName = sanitize(document.getElementById('newFullName').value);
     const password = document.getElementById('newPassword').value;
     const role = document.getElementById('newRole').value;
     
     if (!username || !password) return toast('Username dan password wajib diisi', 'error');
+    if (!fullName) return toast('Nama lengkap wajib diisi', 'error');
     
     const snap = await db.ref('users/' + username).once('value');
     if (snap.exists()) return toast('Username sudah digunakan', 'error');
     
     await db.ref('users/' + username).set({
         username: username,
+        nama: fullName, // Simpan nama lengkap di sini
         password: hashPassword(password),
         role: role,
-        nama: username,
         createdAt: new Date().toISOString()
     });
     
-    toast(`✅ User ${username} (${role}) berhasil ditambahkan`, 'success');
+    toast(`✅ User ${fullName} (${role}) berhasil ditambahkan`, 'success');
     document.getElementById('newUsername').value = '';
+    document.getElementById('newFullName').value = '';
     document.getElementById('newPassword').value = '';
     renderUserList();
 }
 
-async function editUser(username) {
-    const newPassword = prompt(`Masukkan password baru untuk user ${username}:`);
-    if (!newPassword) return;
-    
-    await db.ref('users/' + username + '/password').set(hashPassword(newPassword));
-    toast(`✅ Password user ${username} berhasil diubah`, 'success');
-}
-
 async function deleteUser(username) {
     if (!confirm(`Yakin ingin menghapus user ${username}?`)) return;
-    
     await db.ref('users/' + username).remove();
     toast(`✅ User ${username} berhasil dihapus`, 'success');
+    renderUserList();
+}
+
+// ==========================================
+// EDIT USER FUNCTIONS
+// ==========================================
+let editingUsername = null;
+
+function openEditUser(username) {
+    editingUsername = username;
+    db.ref('users/' + username).once('value').then(snap => {
+        const u = snap.val();
+        document.getElementById('editUsernameDisplay').textContent = username;
+        document.getElementById('editFullName').value = u.nama || username;
+        document.getElementById('editNewPassword').value = '';
+        document.getElementById('editUserModal').classList.add('active');
+    });
+}
+
+function closeEditUserModal() {
+    document.getElementById('editUserModal').classList.remove('active');
+    editingUsername = null;
+}
+
+async function saveEditUser() {
+    if (!editingUsername) return;
+    const fullName = sanitize(document.getElementById('editFullName').value);
+    const newPassword = document.getElementById('editNewPassword').value;
+    
+    if (!fullName) return toast('Nama lengkap tidak boleh kosong', 'error');
+    
+    const updates = { nama: fullName };
+    if (newPassword) {
+        updates.password = hashPassword(newPassword);
+    }
+    
+    await db.ref('users/' + editingUsername).update(updates);
+    toast(`✅ Data ${fullName} berhasil diperbarui`, 'success');
+    closeEditUserModal();
     renderUserList();
 }
 
