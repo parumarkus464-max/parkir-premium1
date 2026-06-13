@@ -464,16 +464,23 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 </div>
             </div>
 
-            <!-- MANAGE USERS (Admin Only) -->
+                        <!-- MANAGE USERS (Admin Only) -->
             <div class="page" id="page-manageUsers">
                 <div class="card">
                     <div class="card-title"><span class="icon">👥</span>Manage User & Password</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
                         <div class="form-group">
-                            <label>Username Baru</label>
+                            <label>Username</label>
                             <div class="input-wrap">
-                                <span class="icon">👤</span>
-                                <input type="text" id="newUsername" placeholder="Username">
+                                <span class="icon"></span>
+                                <input type="text" id="newUsername" placeholder="Username (tanpa spasi)">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Lengkap</label>
+                            <div class="input-wrap">
+                                <span class="icon">📝</span>
+                                <input type="text" id="newFullName" placeholder="Nama Lengkap (Cth: Budi Santoso)">
                             </div>
                         </div>
                         <div class="form-group">
@@ -484,19 +491,17 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Role</label>
+                            <label>Role / Jabatan</label>
                             <div class="input-wrap">
                                 <select id="newRole">
                                     <option value="admin">Admin</option>
-                                    <option value="operator">Operator</option>
+                                    <option value="operator" selected>Operator</option>
                                     <option value="member">Member</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group" style="display:flex;align-items:flex-end;">
-                            <button class="btn btn-success" onclick="addUser()" style="width:100%;">➕ Tambah User</button>
-                        </div>
                     </div>
+                    <button class="btn btn-success" onclick="addUser()" style="width:100%;margin-bottom:16px;">➕ Tambah User Baru</button>
                     <div id="userList"></div>
                 </div>
             </div>
@@ -827,14 +832,22 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     </nav>
 </div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modal">
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="editUserModal">
     <div class="modal">
         <div class="modal-header">
-            <h3 id="modalTitle">Info</h3>
-            <button class="modal-close" onclick="closeModal()">×</button>
+            <h3>Edit User: <span id="editUsernameDisplay" style="color:var(--accent-teal);"></span></h3>
+            <button class="modal-close" onclick="closeEditUserModal()">×</button>
         </div>
-        <div id="modalContent"></div>
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <div class="input-wrap"><input type="text" id="editFullName"></div>
+        </div>
+        <div class="form-group">
+            <label>Password Baru <span style="font-size:10px;color:var(--text-muted);">(Kosongkan jika tidak ingin mengubah)</span></label>
+            <div class="input-wrap"><input type="password" id="editNewPassword"></div>
+        </div>
+        <button class="btn btn-success" onclick="saveEditUser()" style="width:100%;">💾 Simpan Perubahan</button>
     </div>
 </div>
 
