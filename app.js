@@ -17,10 +17,6 @@ const db = firebase.database();
 // ==========================================
 // STATE & CONSTANTS
 // ==========================================
-const DEFAULT_TARIF = { motor: 1000, mobil: 3000 };
-const DEFAULT_BIAYA_MEMBER = { motor: 30000, mobil: 90000 };
-const DEFAULT_DISKON = 10;
-
 let currentUser = null;
 let selectedMember = null;
 let scannerInstance = null;
@@ -44,10 +40,6 @@ function sanitize(s) {
 
 function isValidNIK(nik) {
     return /^\d{10,20}$/.test(nik);
-}
-
-function genKode() {
-    return 'TKT-' + Math.random().toString(36).substr(2, 8).toUpperCase();
 }
 
 function genMemberNo() {
@@ -104,6 +96,7 @@ function saveSession(user) {
     const sessionData = {
         username: user.username,
         role: user.role,
+        nama: user.nama || user.username,
         loginTime: new Date().getTime(),
         expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000)
     };
@@ -113,7 +106,6 @@ function saveSession(user) {
 function loadSession() {
     const sessionStr = localStorage.getItem('parkir_session');
     if (!sessionStr) return null;
-    
     try {
         const session = JSON.parse(sessionStr);
         if (session.expiresAt && session.expiresAt > new Date().getTime()) {
@@ -137,19 +129,16 @@ function checkAuth() {
     if (session) {
         currentUser = { 
             username: session.username, 
-            role: session.role 
+            role: session.role,
+            nama: session.nama
         };
         
+        applyRoleUI();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').classList.add('active');
-        document.getElementById('userName').textContent = session.username;
-        document.getElementById('userAvatar').textContent = session.username[0].toUpperCase();
-        document.getElementById('userRole').textContent = session.role.toUpperCase();
-        document.getElementById('greetingText').textContent = `${greeting()}, ${session.username}!`;
-        document.getElementById('todayDate').textContent = formatTanggal(new Date());
         
         initApp();
-        console.log('✅ Auto-login berhasil dari session tersimpan');
+        console.log('✅ Auto-login berhasil:', session.username, 'role:', session.role);
         return true;
     }
     return false;
@@ -162,17 +151,17 @@ async function initDefaultUsers() {
             admin: { 
                 username: 'admin', 
                 password: hashPassword('admin123'), 
-                role: 'admin' 
+                role: 'admin',
+                nama: 'Administrator'
             },
             operator: { 
                 username: 'operator', 
                 password: hashPassword('op123'), 
-                role: 'operator' 
+                role: 'operator',
+                nama: 'Operator'
             }
         });
-        console.log('✅ Default users created: admin/admin123, operator/op123');
-    } else {
-        console.log('ℹ️ Users already exist in database');
+        console.log('✅ Default users created');
     }
 }
 
@@ -202,16 +191,12 @@ async function doLogin() {
     currentUser = user;
     saveSession(user);
     
+    applyRoleUI();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
-    document.getElementById('userName').textContent = user.username;
-    document.getElementById('userAvatar').textContent = user.username[0].toUpperCase();
-    document.getElementById('userRole').textContent = user.role.toUpperCase();
-    document.getElementById('greetingText').textContent = `${greeting()}, ${user.username}!`;
-    document.getElementById('todayDate').textContent = formatTanggal(new Date());
     
     initApp();
-    toast(`Selamat datang, ${user.username}!`, 'success');
+    toast(`Selamat datang, ${user.nama || user.username}! (${user.role.toUpperCase()})`, 'success');
 }
 
 function quickLogin(u, p) {
@@ -233,20 +218,110 @@ function doLogout() {
 }
 
 // ==========================================
+// ROLE-BASED UI FILTERING
+// ==========================================
+function applyRoleUI() {
+    if (!currentUser) return;
+    
+    const role = currentUser.role;
+    const nama = currentUser.nama || currentUser.username;
+    
+    // Update topbar
+    document.getElementById('userName').textContent = nama;
+    document.getElementById('userAvatar').textContent = nama[0].toUpperCase();
+    document.getElementById('greetingText').textContent = `${greeting()}, ${nama}!`;
+    document.getElementById('todayDate').textContent = formatTanggal(new Date());
+    
+    // Role badge
+    const roleBadge = document.getElementById('userRoleBadge');
+    roleBadge.textContent = role.toUpperCase();
+    roleBadge.className = 'role-badge role-' + role;
+    
+    document.getElementById('userRole').textContent = role.toUpperCase();
+    
+    // Filter sidebar menu
+    const sidebarItems = document.querySelectorAll('#sidebarMenu .nav-item');
+    sidebarItems.forEach(item => {
+        const roles = (item.getAttribute('data-role') || '').split(',');
+        if (roles.includes(role)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Filter mobile nav
+    const mobileItems = document.querySelectorAll('#mobileNav .mobile-nav-item');
+    mobileItems.forEach(item => {
+        const roles = (item.getAttribute('data-role') || '').split(',');
+        // Item tanpa data-role (logout) selalu tampil
+        if (!item.getAttribute('data-role') || roles.includes(role)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Set default page berdasarkan role
+    let defaultPage = 'dashboard';
+    if (role === 'member') defaultPage = 'memberPortal';
+    
+    // Tampilkan halaman default
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const targetPage = document.getElementById('page-' + defaultPage);
+    if (targetPage) targetPage.classList.add('active');
+    
+    document.getElementById('pageTitle').textContent = 
+        defaultPage === 'dashboard' ? 'Dashboard' : 
+        defaultPage === 'memberPortal' ? 'Portal Saya' : 'Dashboard';
+    
+    // Set active state
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
+    
+    // Load data sesuai role
+    if (role === 'member') {
+        loadMemberPortal();
+    } else {
+        refreshDashboard();
+    }
+}
+
+function checkRoleAccess(pageId) {
+    if (!currentUser) return false;
+    
+    const roleAccess = {
+        'admin': ['dashboard','masuk','keluar','scanner','daftarMember','dataMember','cetakKartu','topup','parkirAktif','history','laporan','setting'],
+        'operator': ['dashboard','masuk','keluar','scanner','parkirAktif'],
+        'member': ['memberPortal','memberKartu','memberRiwayat']
+    };
+    
+    const allowed = roleAccess[currentUser.role] || [];
+    if (!allowed.includes(pageId)) {
+        toast('⛔ Akses ditolak! Halaman ini hanya untuk ' + (currentUser.role === 'admin' ? 'Admin' : currentUser.role === 'operator' ? 'Operator' : 'Member'), 'error');
+        return false;
+    }
+    return true;
+}
+
+// ==========================================
 // NAVIGATION
 // ==========================================
 function showPage(pageId, el) {
+    if (!checkRoleAccess(pageId)) return;
+    
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + pageId).classList.add('active');
     
     document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
     if (el) el.classList.add('active');
-      
+    
     const titles = {
         dashboard:'Dashboard',masuk:'Kendaraan Masuk',keluar:'Kendaraan Keluar',
         scanner:'Scan QR',daftarMember:'Daftar Member',dataMember:'Data Member',
         cetakKartu:'Cetak Kartu',topup:'Topup Saldo',parkirAktif:'Parkir Aktif',
-        history:'History',laporan:'Laporan',setting:'Pengaturan'
+        history:'History',laporan:'Laporan',setting:'Pengaturan',
+        memberPortal:'Portal Saya',memberKartu:'Kartu Saya',memberRiwayat:'Riwayat Saya'
     };
     document.getElementById('pageTitle').textContent = titles[pageId] || 'Dashboard';
     
@@ -254,6 +329,7 @@ function showPage(pageId, el) {
         try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
     }
     
+    // Load data per page
     if (pageId === 'dashboard') refreshDashboard();
     if (pageId === 'dataMember') renderMembers();
     if (pageId === 'cetakKartu') renderCetak();
@@ -263,6 +339,9 @@ function showPage(pageId, el) {
     if (pageId === 'setting') loadSetting();
     if (pageId === 'scanner') startScanner();
     if (pageId === 'daftarMember') loadHargaMember();
+    if (pageId === 'memberPortal') loadMemberPortal();
+    if (pageId === 'memberKartu') renderMemberKartu();
+    if (pageId === 'memberRiwayat') renderMemberRiwayat();
     
     if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
 }
@@ -272,9 +351,11 @@ function toggleSidebar() {
 }
 
 // ==========================================
-// DASHBOARD
+// DASHBOARD (Admin/Operator)
 // ==========================================
 function refreshDashboard() {
+    if (currentUser.role === 'member') return;
+    
     db.ref('parkir_aktif').on('value', s => {
         const data = s.val() || {};
         document.getElementById('statAktif').textContent = Object.keys(data).length;
@@ -308,6 +389,134 @@ function renderRecentActivity(parkirData) {
             <div class="list-item-info">
                 <h4>${h.nama} ${badge}</h4>
                 <p>${h.nomor_kendaraan} • ${h.waktu_masuk.substring(11,16)}</p>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ==========================================
+// MEMBER PORTAL
+// ==========================================
+async function loadMemberPortal() {
+    if (!currentUser || currentUser.role !== 'member') return;
+    
+    const nik = currentUser.username;
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    
+    if (!snap.exists()) {
+        toast('Data member tidak ditemukan', 'error');
+        return;
+    }
+    
+    const member = Object.values(snap.val())[0];
+    
+    document.getElementById('mpNama').textContent = `Halo, ${member.nama}!`;
+    document.getElementById('mpNo').textContent = member.nomor_member;
+    document.getElementById('mpBerlaku').textContent = formatTanggalSingkat(member.tgl_berlaku);
+    document.getElementById('mpSaldo').textContent = formatRupiah(member.saldo || 0);
+    document.getElementById('mpStatus').textContent = (member.status || 'aktif').toUpperCase();
+    document.getElementById('mpPlat').textContent = member.nomor_kendaraan;
+    document.getElementById('mpJenis').textContent = (member.jenis_kendaraan || '-').toUpperCase();
+    
+    // Ringkasan bulan ini
+    const thisMonth = new Date().toISOString().substring(0, 7);
+    const historySnap = await db.ref('history').orderByChild('nik').equalTo(nik).once('value');
+    const history = historySnap.val() ? Object.values(historySnap.val()) : [];
+    const thisMonthHistory = history.filter(h => h.waktu_keluar && h.waktu_keluar.startsWith(thisMonth));
+    
+    const totalBulanIni = thisMonthHistory.reduce((a,b) => a + (b.total_biaya || 0), 0);
+    
+    document.getElementById('mpRingkasan').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="background:rgba(0,229,160,0.08);padding:12px;border-radius:10px;">
+                <p style="color:var(--text-muted);font-size:11px;">Total Parkir Bulan Ini</p>
+                <p style="font-size:20px;font-weight:bold;color:var(--accent-teal);">${thisMonthHistory.length}x</p>
+            </div>
+            <div style="background:rgba(245,158,11,0.08);padding:12px;border-radius:10px;">
+                <p style="color:var(--text-muted);font-size:11px;">Total Biaya Bulan Ini</p>
+                <p style="font-size:20px;font-weight:bold;color:var(--accent-gold);">${formatRupiah(totalBulanIni)}</p>
+            </div>
+        </div>
+    `;
+}
+
+async function renderMemberKartu() {
+    if (!currentUser || currentUser.role !== 'member') return;
+    
+    const nik = currentUser.username;
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    
+    if (!snap.exists()) {
+        document.getElementById('memberKartuPreview').innerHTML = '<p style="color:var(--text-muted);text-align:center;">Data tidak ditemukan</p>';
+        return;
+    }
+    
+    const m = Object.values(snap.val())[0];
+    
+    document.getElementById('memberKartuPreview').innerHTML = `
+        <div class="member-card-preview">
+            <div class="card-header">
+                <h3>🅿️ PARKIR PREMIUM</h3>
+                <span>MEMBER CARD</span>
+            </div>
+            <div class="card-body">
+                <div class="member-info">
+                    <h4>${m.nama}</h4>
+                    <div class="member-no">${m.nomor_member}</div>
+                    <p>NIK: ${m.nik}</p>
+                    <p>Kendaraan: ${m.nomor_kendaraan}</p>
+                    <p>Jenis: ${m.jenis_kendaraan.toUpperCase()}</p>
+                    <p style="color:var(--accent-gold);font-weight:bold;">Saldo: ${formatRupiah(m.saldo||0)}</p>
+                    <p style="font-size:10px;opacity:0.7;">Berlaku: ${formatTanggalSingkat(m.tgl_berlaku)}</p>
+                </div>
+                <div id="qr-member"></div>
+            </div>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        const el = document.getElementById('qr-member');
+        if (el && !el.hasChildNodes()) {
+            new QRCode(el, { text: m.nik, width: 100, height: 100, colorDark:'#000000', colorLight:'#ffffff' });
+        }
+    }, 100);
+}
+
+function cetakKartuSaya() {
+    if (!currentUser || currentUser.role !== 'member') return;
+    
+    const nik = currentUser.username;
+    db.ref('members').orderByChild('nik').equalTo(nik).once('value').then(snap => {
+        if (!snap.exists()) return;
+        const m = Object.values(snap.val())[0];
+        cetakKartu(0, m.nomor_member, m.nama, m.nik, m.nomor_kendaraan, m.jenis_kendaraan, m.saldo||0, m.tgl_berlaku||'');
+    });
+}
+
+async function renderMemberRiwayat() {
+    if (!currentUser || currentUser.role !== 'member') return;
+    
+    const nik = currentUser.username;
+    const snap = await db.ref('history').orderByChild('nik').equalTo(nik).once('value');
+    const history = snap.val() ? Object.values(snap.val()).sort((a,b) => new Date(b.waktu_keluar) - new Date(a.waktu_keluar)) : [];
+    
+    const list = document.getElementById('memberRiwayatList');
+    
+    if (history.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Belum ada riwayat parkir</p>';
+        return;
+    }
+    
+    list.innerHTML = history.map(h => {
+        return `<div class="list-item">
+            <div class="list-item-info">
+                <h4>${h.nomor_kendaraan} • ${h.jenis_kendaraan.toUpperCase()}</h4>
+                <p>${h.waktu_masuk.substring(0,16)} → ${h.waktu_keluar.substring(0,16)}</p>
+                <p style="font-size:11px;">${h.lama_jam} jam × ${formatRupiah(h.tarif_per_jam)}/jam</p>
+            </div>
+            <div style="text-align:right;">
+                <p style="color:var(--success);font-weight:bold;font-size:14px;">${formatRupiah(h.total_biaya)}</p>
+                ${h.diskon_persen > 0 ? `<p style="font-size:10px;color:var(--accent-teal);">Diskon ${h.diskon_persen}%</p>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -368,7 +577,7 @@ async function prosesMasuk() {
     if (cekSnap.exists()) return toast('Kendaraan dengan NIK ini sudah parkir','error');
     
     const kode = 'PK' + new Date().toISOString().replace(/[-:T]/g,'').substring(0,14) + nik.substring(nik.length-4);
-    const now = new Date().toISOString(); // Format ISO lengkap dengan 'T'
+    const now = new Date().toISOString();
     
     const data = {
         nik, nama, nomor_kendaraan: plat, jenis_kendaraan: jenis,
@@ -386,7 +595,7 @@ async function prosesMasuk() {
         <p><strong>Nama:</strong> ${nama}</p>
         <p><strong>Kendaraan:</strong> ${plat}</p>
         <p><strong>Jenis:</strong> ${jenis.toUpperCase()}</p>
-        <p><strong>Waktu Masuk:</strong> ${now}</p>`;
+        <p><strong>Waktu Masuk:</strong> ${new Date(now).toLocaleString('id-ID')}</p>`;
     if (selectedMember) {
         html += `<p style="color:var(--success);margin-top:10px;">🎖️ MEMBER | Diskon ${settings.diskon}% | Tarif ${formatRupiah(tarif)}/jam</p>`;
     }
@@ -420,45 +629,17 @@ async function doKeluar(kode) {
     const key = Object.keys(snap.val())[0];
     const data = snap.val()[key];
     
-    // PARSING WAKTU YANG AMAN (support semua browser)
     let tMasuk = new Date(data.waktu_masuk);
-    
-    // Jika parsing gagal (NaN), coba format alternatif
-    if (isNaN(tMasuk.getTime())) {
-        // Coba ganti spasi dengan 'T' untuk format ISO
-        tMasuk = new Date(data.waktu_masuk.replace(' ', 'T'));
-    }
-    if (isNaN(tMasuk.getTime())) {
-        // Fallback: coba format lain
-        tMasuk = new Date(data.waktu_masuk.replace(' ', 'T') + 'Z');
-    }
-    if (isNaN(tMasuk.getTime())) {
-        return toast('Error: Format waktu masuk tidak valid', 'error');
-    }
+    if (isNaN(tMasuk.getTime())) tMasuk = new Date(data.waktu_masuk.replace(' ', 'T'));
+    if (isNaN(tMasuk.getTime())) tMasuk = new Date(data.waktu_masuk.replace(' ', 'T') + 'Z');
     
     const tKeluar = new Date();
-    
-    // Hitung selisih dalam milidetik
     const diffMs = tKeluar - tMasuk;
-    
-    // Konversi ke jam
     const diffHours = diffMs / 3600000;
-    
-    // Pembulatan: minimal 1 jam (dari 1 menit sudah dihitung 1 jam)
     let jam = Math.ceil(diffHours);
     if (jam < 1) jam = 1;
     
-    // Debug log (bisa dilihat di Console browser F12)
-    console.log('=== PERHITUNGAN PARKIR ===');
-    console.log('Waktu Masuk:', tMasuk.toLocaleString('id-ID'));
-    console.log('Waktu Keluar:', tKeluar.toLocaleString('id-ID'));
-    console.log('Selisih (menit):', Math.round(diffMs / 60000));
-    console.log('Jam dihitung:', jam);
-    
-    // Ambil tarif dari Settings
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
-    
-    // Hitung diskon (hanya untuk member)
     let diskonPersen = 0;
     let tarifAkhir = tarifDasar;
     let potongan = 0;
@@ -469,10 +650,8 @@ async function doKeluar(kode) {
         tarifAkhir = tarifDasar - potongan;
     }
     
-    // Total biaya
     const biaya = jam * tarifAkhir;
     
-    // Proses saldo member
     let saldoAkhir = null;
     if (data.is_member && data.nomor_member) {
         const mSnap = await db.ref('members').orderByChild('nomor_member').equalTo(data.nomor_member).once('value');
@@ -487,7 +666,6 @@ async function doKeluar(kode) {
         }
     }
     
-    // Simpan ke history
     const historyData = {
         ...data,
         waktu_keluar: tKeluar.toISOString(),
@@ -502,8 +680,7 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    // Tampilkan struk
-    const tag = data.is_member ? '🏅 MEMBER' : ' REGULER';
+    const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
     const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
     
     let struk = `
@@ -521,7 +698,7 @@ async function doKeluar(kode) {
         <div style="display:flex;justify-content:space-between;padding:8px;font-size:14px;font-weight:bold;background:#f0f0f0;margin:8px 0;border-radius:4px;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
         <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>
         ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:green;"><span>Diskon Member (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:gray;"><span>Diskon</span><span>Tidak Ada (Reguler)</span></div>'}
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Setelah Diskon</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Akhir</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
         <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;">
             <span>TOTAL BAYAR</span>
             <span style="color:${accent};">${formatRupiah(biaya)}</span>
@@ -538,7 +715,7 @@ async function doKeluar(kode) {
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
         <button onclick="cetakStruk()" class="btn btn-primary" style="flex:1;padding:12px;background:var(--accent-teal);color:var(--bg-dark);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
-            ️ Cetak Struk
+            🖨️ Cetak Struk
         </button>
         <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);border-radius:8px;font-weight:bold;cursor:pointer;">
             Tutup
@@ -629,7 +806,7 @@ async function prosesScanManual() {
 }
 
 // ==========================================
-// DAFTAR MEMBER
+// DAFTAR MEMBER (dengan auto-create user)
 // ==========================================
 function loadHargaMember() {
     document.getElementById('hargaMotor').textContent = formatRupiah(settings.biaya_motor || 30000) + '/bulan';
@@ -665,6 +842,15 @@ async function daftarMember() {
     
     await db.ref('members').push(data);
     
+    // AUTO-CREATE USER untuk member (NIK = username & password)
+    await db.ref('users/' + nik).set({
+        username: nik,
+        password: hashPassword(nik),
+        role: 'member',
+        nama: nama,
+        createdAt: new Date().toISOString()
+    });
+    
     showModal('Pendaftaran Berhasil', `
         <div style="text-align:center;padding:10px;">
             <h2 style="color:var(--success);margin-bottom:16px;">✅ PENDAFTARAN BERHASIL</h2>
@@ -675,7 +861,11 @@ async function daftarMember() {
             <hr style="border-color:var(--border);margin:12px 0;">
             <p><strong>Biaya Daftar:</strong> ${formatRupiah(biaya)}</p>
             <p style="color:var(--success);"><strong>Saldo Awal:</strong> ${formatRupiah(biaya)}</p>
-            <p style="color:var(--text-secondary);font-size:12px;margin-top:10px;">Saldo digunakan untuk bayar parkir otomatis</p>
+            <hr style="border-color:var(--border);margin:12px 0;">
+            <p style="color:var(--accent-gold);font-weight:bold;">🔑 Info Login Member:</p>
+            <p>Username: <strong>${nik}</strong></p>
+            <p>Password: <strong>${nik}</strong></p>
+            <p style="color:var(--text-secondary);font-size:11px;margin-top:8px;">Sarankan member mengganti password setelah login pertama</p>
         </div>
     `);
     
@@ -684,7 +874,7 @@ async function daftarMember() {
 }
 
 // ==========================================
-// DATA MEMBER (DENGAN FITUR HAPUS)
+// DATA MEMBER
 // ==========================================
 async function renderMembers() {
     const snap = await db.ref('members').once('value');
@@ -742,30 +932,46 @@ async function exportMemberCSV() {
     toast('Export berhasil','success');
 }
 
-// ✅ FUNGSI HAPUS MEMBER BARU
 async function hapusMember(nik, nama) {
-    if (!confirm(`⚠️ PERINGATAN!\n\nAnda akan menghapus member:\n\nNama: ${nama}\nNIK: ${nik}\n\nData yang dihapus TIDAK BISA dikembalikan!\n\nLanjutkan?`)) {
-        return;
-    }
-    
-    if (!confirm(`Yakin 100% ingin hapus ${nama}?`)) {
-        return;
-    }
+    if (!confirm(`⚠️ PERINGATAN!\n\nAnda akan menghapus member:\n\nNama: ${nama}\nNIK: ${nik}\n\nData yang dihapus TIDAK BISA dikembalikan!\n\nLanjutkan?`)) return;
+    if (!confirm(`Yakin 100% ingin hapus ${nama}?`)) return;
     
     try {
         const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
-        if (!snap.exists()) {
-            return toast('Member tidak ditemukan', 'error');
-        }
+        if (!snap.exists()) return toast('Member tidak ditemukan', 'error');
         
         const key = Object.keys(snap.val())[0];
         await db.ref('members/' + key).remove();
+        
+        // Hapus juga user login
+        await db.ref('users/' + nik).remove();
         
         toast(`✅ Member ${nama} berhasil dihapus!`, 'success');
         renderMembers();
     } catch (err) {
         toast('❌ Gagal hapus: ' + err.message, 'error');
     }
+}
+
+async function showDetailMember(nik) {
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    if (!snap.exists()) return;
+    const m = Object.values(snap.val())[0];
+    showModal('Detail Member', `
+        <div style="padding:10px;">
+            <h3 style="color:var(--accent-teal);">${m.nama}</h3>
+            <p style="color:var(--accent-teal);margin-bottom:12px;">${m.nomor_member}</p>
+            <hr style="border-color:var(--border);margin:12px 0;">
+            <p><strong>NIK:</strong> ${m.nik}</p>
+            <p><strong>Telepon:</strong> ${m.no_telepon||'-'}</p>
+            <p><strong>Alamat:</strong> ${m.alamat||'-'}</p>
+            <p><strong>Kendaraan:</strong> ${m.nomor_kendaraan} (${m.jenis_kendaraan.toUpperCase()})</p>
+            <p><strong>Saldo:</strong> <span style="color:var(--success);font-weight:bold;">${formatRupiah(m.saldo||0)}</span></p>
+            <p><strong>Status:</strong> <span style="color:${m.status==='aktif'?'var(--success)':'var(--danger)'};">${m.status.toUpperCase()}</span></p>
+            <p><strong>Daftar:</strong> ${m.tgl_daftar||'-'}</p>
+            <p><strong>Berlaku s/d:</strong> ${formatTanggalSingkat(m.tgl_berlaku)}</p>
+        </div>
+    `);
 }
 
 // ==========================================
@@ -805,10 +1011,6 @@ async function renderCetak() {
                         <p style="font-size:10px;opacity:0.7;">Berlaku: ${formatTanggalSingkat(m.tgl_berlaku)}</p>
                     </div>
                     <div id="qr-${i}"></div>
-                </div>
-                <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:10px;opacity:0.6;">
-                    <span>Daftar: ${formatTanggalSingkat(m.tgl_daftar)}</span>
-                    <span>www.parkirpremium.id</span>
                 </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:12px;">
@@ -867,27 +1069,6 @@ function cetakKartu(i, no, nama, nik, plat, jenis, saldo, berlaku) {
     win.document.close();
 }
 
-async function showDetailMember(nik) {
-    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
-    if (!snap.exists()) return;
-    const m = Object.values(snap.val())[0];
-    showModal('Detail Member', `
-        <div style="padding:10px;">
-            <h3 style="color:var(--accent-teal);">${m.nama}</h3>
-            <p style="color:var(--accent-teal);margin-bottom:12px;">${m.nomor_member}</p>
-            <hr style="border-color:var(--border);margin:12px 0;">
-            <p><strong>NIK:</strong> ${m.nik}</p>
-            <p><strong>Telepon:</strong> ${m.no_telepon||'-'}</p>
-            <p><strong>Alamat:</strong> ${m.alamat||'-'}</p>
-            <p><strong>Kendaraan:</strong> ${m.nomor_kendaraan} (${m.jenis_kendaraan.toUpperCase()})</p>
-            <p><strong>Saldo:</strong> <span style="color:var(--success);font-weight:bold;">${formatRupiah(m.saldo||0)}</span></p>
-            <p><strong>Status:</strong> <span style="color:${m.status==='aktif'?'var(--success)':'var(--danger)'};">${m.status.toUpperCase()}</span></p>
-            <p><strong>Daftar:</strong> ${m.tgl_daftar||'-'}</p>
-            <p><strong>Berlaku s/d:</strong> ${formatTanggalSingkat(m.tgl_berlaku)}</p>
-        </div>
-    `);
-}
-
 // ==========================================
 // TOPUP
 // ==========================================
@@ -916,32 +1097,24 @@ async function cariMemberTopup() {
 }
 
 async function prosesTopup(jumlah) {
-    // Mencegah klik ganda
-    if (isTopupProcessing) return; 
+    if (isTopupProcessing) return;
     if (!selectedMember) return toast('Cari member dulu','error');
 
-    // Aktifkan status processing & matikan tombol
     isTopupProcessing = true;
     const btns = document.querySelectorAll('#topupNominal .btn');
-    btns.forEach(b => { 
-        b.disabled = true; 
-        b.style.opacity = '0.5'; 
-        b.style.cursor = 'not-allowed'; 
-    });
+    btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
 
     try {
         const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
         if (!snap.exists()) return toast('Member tidak ditemukan','error');
-
         const key = Object.keys(snap.val())[0];
         const member = snap.val()[key];
-
-        // Tambahkan saldo
+        
         const saldoBaru = (member.saldo || 0) + jumlah;
         const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
-
+        
         await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
-
+        
         showModal('Topup Berhasil', `
             <div style="text-align:center;padding:20px;">
                 <h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2>
@@ -950,23 +1123,16 @@ async function prosesTopup(jumlah) {
                 <p style="margin-top:10px;color:var(--text-secondary);font-size:12px;">Masa berlaku diperpanjang sampai ${formatTanggalSingkat(berlakuBaru)}</p>
             </div>
         `);
-
-        // Reset form
+        
         selectedMember = null;
         document.getElementById('topupSearch').value = '';
         document.getElementById('topupInfo').style.display = 'none';
         document.getElementById('topupNominal').style.display = 'none';
-        
     } catch (err) {
         toast('Gagal topup: ' + err.message, 'error');
     } finally {
-        // Kembalikan status tombol
         isTopupProcessing = false;
-        btns.forEach(b => { 
-            b.disabled = false; 
-            b.style.opacity = '1'; 
-            b.style.cursor = 'pointer'; 
-        });
+        btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
     }
 }
 
@@ -1112,19 +1278,20 @@ async function simpanSetting() {
 }
 
 // ==========================================
-// CLOCK
+// CLOCK & INIT
 // ==========================================
 function updateClock() {
     const now = new Date();
     document.getElementById('clock').textContent = '🕐 ' + now.toLocaleTimeString('id-ID');
 }
 
-// ==========================================
-// INIT
-// ==========================================
 async function initApp() {
     await initDefaultSettings();
-    refreshDashboard();
+    if (currentUser && currentUser.role !== 'member') {
+        refreshDashboard();
+    } else if (currentUser && currentUser.role === 'member') {
+        loadMemberPortal();
+    }
 }
 
 document.getElementById('loginPass').addEventListener('keypress', e => {
@@ -1139,7 +1306,7 @@ initDefaultUsers();
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (!checkAuth()) {
-            console.log('ℹ️ Tidak ada session aktif, silakan login');
+            console.log('ℹ️ Silakan login');
         }
     }, 500);
 });
