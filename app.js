@@ -1618,3 +1618,97 @@ document.getElementById('modal').addEventListener('click', e => {
 document.getElementById('editUserModal').addEventListener('click', e => {
     if (e.target.id === 'editUserModal') closeEditUserModal();
 });
+// ==========================================
+// MENU DRAWER FUNCTIONS (UNTUK MOBILE)
+// ==========================================
+function openMenuDrawer() {
+    const overlay = document.getElementById('menuDrawerOverlay');
+    const drawer = document.getElementById('menuDrawer');
+    if (overlay) overlay.classList.add('active');
+    if (drawer) drawer.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    console.log('✅ Menu drawer opened');
+}
+
+function closeMenuDrawer() {
+    const overlay = document.getElementById('menuDrawerOverlay');
+    const drawer = document.getElementById('menuDrawer');
+    if (overlay) overlay.classList.remove('active');
+    if (drawer) drawer.classList.remove('active');
+    document.body.style.overflow = '';
+    console.log('✅ Menu drawer closed');
+}
+
+// Update fungsi toggleSidebar
+function toggleSidebar() {
+    if (window.innerWidth <= 768) {
+        openMenuDrawer();
+    } else {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
+}
+
+// Generate Menu Drawer untuk Mobile
+function generateDrawerMenu(menus) {
+    const drawerMenu = document.getElementById('drawerMenu');
+    if (!drawerMenu) {
+        console.error('❌ drawerMenu element not found!');
+        return;
+    }
+    
+    const groups = {
+        utama: { title: '📂 Utama', items: [] },
+        member: { title: '👥 Member', items: [] },
+        laporan: { title: '📊 Laporan', items: [] },
+        memberPortal: { title: '🏠 Portal Member', items: [] }
+    };
+    
+    menus.forEach(menu => {
+        if (groups[menu.group]) groups[menu.group].items.push(menu);
+    });
+    
+    let html = '';
+    Object.keys(groups).forEach(groupKey => {
+        const group = groups[groupKey];
+        if (group.items.length === 0) return;
+        
+        html += `<div class="nav-section-title">${group.title}</div>`;
+        group.items.forEach(menu => {
+            html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this); closeMenuDrawer();"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
+        });
+    });
+    
+    drawerMenu.innerHTML = html;
+    console.log('✅ Drawer menu generated. Total items:', menus.length);
+}
+
+// Update fungsi generateMenus untuk memanggil generateDrawerMenu
+function generateMenus(userRole) {
+    console.log('🔧 Generating menus for role:', userRole);
+    
+    const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
+    console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
+    
+    generateSidebarMenu(filteredMenus);
+    generateDrawerMenu(filteredMenus);  // ← INI YANG BARU
+    generateQuickActions(filteredMenus);
+}
+
+// Update fungsi setActiveMenu untuk sync drawer
+function setActiveMenu(pageId) {
+    // Set active di sidebar (laptop)
+    document.querySelectorAll('#sidebarMenu .nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Set active di drawer (mobile)
+    document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+}
