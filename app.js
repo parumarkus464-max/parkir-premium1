@@ -1312,28 +1312,197 @@ async function cariMemberTopup() {
     document.getElementById('topupNominal').style.display = 'block';
 }
 
+// ==========================================
+// TOPUP DENGAN VIRTUAL ACCOUNT (TRIPAY UI)
+// ==========================================
+let pendingTopupAmount = 0;
+
 async function prosesTopup(jumlah) {
-    if (isTopupProcessing || !selectedMember) return;
-    isTopupProcessing = true;
-    const btns = document.querySelectorAll('#topupNominal .btn');
-    btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
-    try {
-        const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
-        if (!snap.exists()) return toast('Member tidak ditemukan','error');
-        const key = Object.keys(snap.val())[0];
-        const member = snap.val()[key];
-        const saldoBaru = (member.saldo || 0) + jumlah;
-        const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
-        await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
-        showModal('Topup Berhasil', `<div style="text-align:center;padding:20px;"><h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2><p style="margin:16px 0;">Nominal: <strong style="color:var(--accent-gold);">${formatRupiah(jumlah)}</strong></p><p>Saldo Baru: <strong style="color:var(--success);font-size:20px;">${formatRupiah(saldoBaru)}</strong></p></div>`);
-        selectedMember = null;
-        document.getElementById('topupSearch').value = '';
-        document.getElementById('topupInfo').style.display = 'none';
-        document.getElementById('topupNominal').style.display = 'none';
-    } catch (err) { toast('Gagal topup: ' + err.message, 'error'); } finally {
-        isTopupProcessing = false;
-        btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    if (isTopupProcessing) return;
+    if (!selectedMember) return toast('Cari member dulu','error');
+
+    pendingTopupAmount = jumlah;
+    
+    // Tampilkan Modal Pilihan Metode Pembayaran
+    showModalPembayaran(jumlah, 'topup');
+}
+
+function showModalPembayaran(jumlah, tipe) {
+    const metodePembayaran = [
+        { code: 'BCAVA', name: 'BCA Virtual Account', icon: '🏦', color: '#0060AF' },
+        { code: 'MANDIRIVA', name: 'Mandiri Virtual Account', icon: '🏦', color: '#003366' },
+        { code: 'BRIVA', name: 'BRI Virtual Account', icon: '🏦', color: '#00529C' },
+        { code: 'BNIVA', name: 'BNI Virtual Account', icon: '🏦', color: '#F05A22' },
+        { code: 'NTTVA', name: 'Bank NTT Virtual Account', icon: '🏦', color: '#00529C' }, // <-- BANK NTT DITAMBAHKAN DI SINI
+        { code: 'QRIS', name: 'QRIS (Semua E-Wallet)', icon: '📱', color: '#E31E24' }
+    ];
+
+    const html = `
+        <div style="text-align:center;margin-bottom:20px;">
+            <h3 style="color:var(--accent-teal);margin-bottom:8px;">💳 Pilih Metode Pembayaran</h3>
+            <p style="color:var(--text-secondary);font-size:14px;">Total Tagihan:</p>
+            <h2 style="color:var(--accent-gold);font-size:28px;margin:8px 0;">${formatRupiah(jumlah)}</h2>
+            <p style="font-size:12px;color:var(--text-muted);">Aman & Terenkripsi oleh Tripay</p>
+        </div>
+        
+        <div style="display:grid;gap:10px;max-height:300px;overflow-y:auto;">
+            ${metodePembayaran.map(m => `
+                <button onclick="pilihMetodeBayar('${m.code}', '${m.name}', ${jumlah}, '${tipe}')" 
+                    style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);cursor:pointer;transition:all 0.2s;">
+                    <div style="width:40px;height:40px;background:${m.color};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">
+                        ${m.icon}
+                    </div>
+                    <div style="flex:1;text-align:left;">
+                        <div style="font-weight:bold;font-size:14px;">${m.name}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">Otomatis terverifikasi</div>
+                    </div>
+                    <div style="color:var(--accent-teal);font-size:18px;">›</div>
+                </button>
+            `).join('')}
+        </div>
+        
+        <button onclick="closeModal()" style="width:100%;margin-top:16px;padding:12px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:10px;cursor:pointer;">
+            Batal
+        </button>
+    `;
+    
+    showModal('Pembayaran', html);
+}
+
+async function pilihMetodeBayar(kodeMetode, namaMetode, jumlah, tipe) {
+    // Di tahap ini, aplikasi akan meminta Cloud Functions untuk membuat transaksi
+    // Untuk demo UI, kita tampilkan instruksi dummy terlebih dahulu
+    
+    closeModal();
+    toast(`⏳ Membuat ${namaMetode}...`, 'info');
+    
+    // Simulasi delay proses (Nanti diganti dengan panggilan ke Firebase Functions)
+    setTimeout(() => {
+        tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe);
+    }, 1500);
+}
+
+function tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe) {
+    // Generate Nomor VA Dummy (Format Tripay biasanya diawali kode merchant)
+    const nomorVA = '8808' + Math.floor(1000000000 + Math.random() * 9000000000); 
+    const expiredTime = new Date(Date.now() + 60 * 60 * 1000).toLocaleString('id-ID'); // 1 jam
+    
+    let instruksi = '';
+    
+    if (kodeMetode === 'BCAVA') {
+        instruksi = `
+            <li>Buka menu <b>m-BCA</b> atau <b>BCA KlikPay</b></li>
+            <li>Pilih <b>m-Transfer</b> > <b>BCA Virtual Account</b></li>
+            <li>Masukkan nomor: <b>${nomorVA}</b></li>
+            <li>Masukkan nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Masukkan PIN BCA Anda</li>
+            <li>Transaksi selesai</li>
+        `;
+    } else if (kodeMetode === 'NTTVA') {
+        instruksi = `
+            <li>Buka aplikasi <b>Bank NTT Mobile</b> atau kunjungi <b>ATM Bank NTT</b></li>
+            <li>Pilih menu <b>Transaksi Lain</b> > <b>Pembayaran</b></li>
+            <li>Pilih <b>Virtual Account</b></li>
+            <li>Masukkan nomor VA: <b>${nomorVA}</b></li>
+            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Simpan bukti transaksi</li>
+            <li>Transaksi selesai</li>
+        `;
+    } else if (kodeMetode === 'QRIS') {
+        instruksi = `
+            <li>Buka aplikasi E-Wallet (GoPay/OVO/Dana/ShopeePay)</li>
+            <li>Pilih menu <b>Scan / QRIS</b></li>
+            <li>Scan QR Code yang muncul</li>
+            <li>Konfirmasi pembayaran</li>
+        `;
+    } else {
+        // Instruksi umum untuk Mandiri, BRI, BNI
+        instruksi = `
+            <li>Buka Mobile Banking ${namaMetode.replace(' Virtual Account','')}</li>
+            <li>Pilih menu <b>Pembayaran</b> > <b>Virtual Account</b></li>
+            <li>Masukkan nomor: <b>${nomorVA}</b></li>
+            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Selesai</li>
+        `;
     }
+
+    const html = `
+        <div style="text-align:center;padding:10px;">
+            <div style="background:rgba(16,185,129,0.1);border:1px solid var(--success);border-radius:10px;padding:12px;margin-bottom:16px;">
+                <p style="color:var(--success);font-weight:bold;margin:0;font-size:14px;">⏳ Menunggu Pembayaran</p>
+                <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;">Selesaikan sebelum ${expiredTime}</p>
+            </div>
+            
+            <div style="background:var(--bg-input);padding:16px;border-radius:10px;margin-bottom:16px;">
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Nomor ${namaMetode}</p>
+                <h2 style="color:var(--accent-teal);font-size:24px;margin:4px 0;letter-spacing:2px;">${nomorVA}</h2>
+                <button onclick="navigator.clipboard.writeText('${nomorVA}');toast('Nomor VA disalin!','success')" 
+                    style="background:transparent;border:1px solid var(--accent-teal);color:var(--accent-teal);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-top:8px;">
+                    📋 Salin Nomor
+                </button>
+            </div>
+            
+            <div style="text-align:left;background:var(--bg-card);padding:16px;border-radius:10px;margin-bottom:16px;">
+                <p style="font-weight:bold;margin-bottom:8px;color:var(--text-primary);">📋 Instruksi Pembayaran:</p>
+                <ol style="padding-left:20px;margin:0;color:var(--text-secondary);font-size:12px;line-height:1.6;">
+                    ${instruksi}
+                </ol>
+            </div>
+            
+            <div style="background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:12px;margin-bottom:16px;">
+                <p style="font-size:12px;color:var(--warning);margin:0;">
+                    ⚠️ <b>PENTING:</b> Jangan tutup halaman ini sampai pembayaran terverifikasi otomatis.
+                </p>
+            </div>
+
+            <button onclick="cekStatusPembayaran('${nomorVA}', '${tipe}')" class="btn btn-success" style="width:100%;padding:14px;">
+                ✅ Saya Sudah Bayar (Cek Status)
+            </button>
+            <button onclick="closeModal()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;">
+                Batalkan Transaksi
+            </button>
+        </div>
+    `;
+    
+    showModal('Instruksi Pembayaran', html);
+}
+
+async function cekStatusPembayaran(nomorVA, tipe) {
+    toast('🔄 Mengecek status pembayaran...', 'info');
+    
+    // Di sini nanti kita panggil Firebase Functions untuk cek ke Tripay
+    // Untuk demo, kita simulasikan sukses setelah 2 detik
+    
+    setTimeout(async () => {
+        if (tipe === 'topup') {
+            // Eksekusi topup manual (Nanti diganti otomatis via Webhook)
+            const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
+            if (snap.exists()) {
+                const key = Object.keys(snap.val())[0];
+                const member = snap.val()[key];
+                const saldoBaru = (member.saldo || 0) + pendingTopupAmount;
+                const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
+                
+                await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
+                
+                showModal('Topup Berhasil', `
+                    <div style="text-align:center;padding:20px;">
+                        <div style="font-size:60px;margin-bottom:16px;">🎉</div>
+                        <h2 style="color:var(--success);margin-bottom:8px;">PEMBAYARAN BERHASIL!</h2>
+                        <p style="color:var(--text-secondary);margin-bottom:16px;">Saldo member telah ditambahkan secara otomatis.</p>
+                        <div style="background:var(--bg-input);padding:16px;border-radius:10px;">
+                            <p style="font-size:12px;color:var(--text-muted);">Saldo Baru</p>
+                            <h3 style="color:var(--accent-teal);font-size:24px;margin:4px 0;">${formatRupiah(saldoBaru)}</h3>
+                        </div>
+                    </div>
+                `);
+                selectedMember = null;
+                document.getElementById('topupSearch').value = '';
+                document.getElementById('topupInfo').style.display = 'none';
+                document.getElementById('topupNominal').style.display = 'none';
+            }
+        }
+    }, 2000);
 }
 
 // ==========================================
