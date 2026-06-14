@@ -25,29 +25,22 @@ let isTopupProcessing = false;
 let editingUsername = null;
 
 // ==========================================
-// KONFIGURASI MENU LENGKAP (Single Source of Truth)
+// KONFIGURASI MENU (Single Source of Truth)
 // ==========================================
 const MENU_CONFIG = [
-    // ===== MENU UTAMA (Admin & Operator) =====
     { id: 'dashboard', icon: '📊', label: 'Dashboard', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 1 },
     { id: 'masuk', icon: '🚪', label: 'Kendaraan Masuk', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 2 },
     { id: 'scanner', icon: '📷', label: 'Scan QR', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 3 },
     { id: 'keluar', icon: '🔑', label: 'Kendaraan Keluar', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 4 },
     { id: 'parkirAktif', icon: '🚦', label: 'Parkir Aktif', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 5 },
-    
-    // ===== MENU MEMBER MANAGEMENT (Admin Only) =====
     { id: 'daftarMember', icon: '👤', label: 'Daftar Member', roles: ['admin'], group: 'member', mobilePriority: 6 },
     { id: 'dataMember', icon: '🗂️', label: 'Data Member', roles: ['admin'], group: 'member', mobilePriority: 7 },
     { id: 'cetakKartu', icon: '🧾', label: 'Cetak Kartu', roles: ['admin'], group: 'member', mobilePriority: 8 },
     { id: 'topup', icon: '💰', label: 'Topup Saldo', roles: ['admin'], group: 'member', mobilePriority: 9 },
-    
-    // ===== MENU LAPORAN (Admin Only) =====
     { id: 'history', icon: '⏱️', label: 'History', roles: ['admin'], group: 'laporan', mobilePriority: 10 },
     { id: 'laporan', icon: '📑', label: 'Laporan', roles: ['admin'], group: 'laporan', mobilePriority: 11 },
     { id: 'setting', icon: '⚙️', label: 'Pengaturan', roles: ['admin'], group: 'laporan', mobilePriority: 12 },
     { id: 'manageUsers', icon: '👥', label: 'Manage User', roles: ['admin'], group: 'laporan', mobilePriority: 13 },
-    
-    // ===== MENU MEMBER PORTAL (Member Only) =====
     { id: 'memberPortal', icon: '🏠', label: 'Portal Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 1 },
     { id: 'memberKartu', icon: '🎫', label: 'Kartu Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 2 },
     { id: 'memberRiwayat', icon: '📜', label: 'Riwayat Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 3 },
@@ -62,11 +55,10 @@ const PAGE_TITLES = {
 };
 
 // ==========================================
-// GENERATE MENU OTOMATIS (Sidebar + Drawer)
+// MENU GENERATION (Sidebar + Drawer + Quick Actions)
 // ==========================================
 function generateMenus(userRole) {
     console.log('🔧 Generating menus for role:', userRole);
-    
     const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
     console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
     
@@ -94,7 +86,6 @@ function generateSidebarMenu(menus) {
     Object.keys(groups).forEach(groupKey => {
         const group = groups[groupKey];
         if (group.items.length === 0) return;
-        
         html += `<div class="nav-section-title">${group.title}</div>`;
         group.items.forEach(menu => {
             html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this)"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
@@ -104,7 +95,6 @@ function generateSidebarMenu(menus) {
     sidebarMenu.innerHTML = html;
 }
 
-// Generate Menu Drawer untuk Mobile
 function generateDrawerMenu(menus) {
     const drawerMenu = document.getElementById('drawerMenu');
     if (!drawerMenu) {
@@ -127,7 +117,6 @@ function generateDrawerMenu(menus) {
     Object.keys(groups).forEach(groupKey => {
         const group = groups[groupKey];
         if (group.items.length === 0) return;
-        
         html += `<div class="nav-section-title">${group.title}</div>`;
         group.items.forEach(menu => {
             html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this); closeMenuDrawer();"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
@@ -138,49 +127,6 @@ function generateDrawerMenu(menus) {
     console.log('✅ Drawer menu generated. Total items:', menus.length);
 }
 
-// Buka Menu Drawer
-function openMenuDrawer() {
-    document.getElementById('menuDrawerOverlay').classList.add('active');
-    document.getElementById('menuDrawer').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-// Tutup Menu Drawer
-function closeMenuDrawer() {
-    document.getElementById('menuDrawerOverlay').classList.remove('active');
-    document.getElementById('menuDrawer').classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// Update toggleSidebar untuk mobile
-function toggleSidebar() {
-    if (window.innerWidth <= 768) {
-        openMenuDrawer();
-    } else {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-}
-
-// Update setActiveMenu untuk sync sidebar & drawer
-function setActiveMenu(pageId) {
-    // Set active di sidebar (laptop)
-    document.querySelectorAll('#sidebarMenu .nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
-    });
-    
-    // Set active di drawer (mobile)
-    document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
-    });
-}
-
-// Generate Quick Actions
 function generateQuickActions(menus) {
     const container = document.getElementById('quickActions');
     if (!container) return;
@@ -192,7 +138,6 @@ function generateQuickActions(menus) {
     }
     
     const actions = menus.filter(m => ['masuk', 'keluar', 'scanner', 'daftarMember'].includes(m.id));
-    
     if (actions.length === 0) {
         container.innerHTML = '';
         return;
@@ -220,41 +165,52 @@ function generateQuickActions(menus) {
 }
 
 function setActiveMenu(pageId) {
-    // Set active di sidebar (laptop)
-    document.querySelectorAll('.nav-item').forEach(item => {
+    document.querySelectorAll('#sidebarMenu .nav-item').forEach(item => {
         item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
+        if (item.getAttribute('data-page') === pageId) item.classList.add('active');
     });
-    
-    // Set active di drawer (mobile)
     document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
         item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
+        if (item.getAttribute('data-page') === pageId) item.classList.add('active');
     });
+}
+
+// ==========================================
+// MENU DRAWER FUNCTIONS (Mobile)
+// ==========================================
+function openMenuDrawer() {
+    const overlay = document.getElementById('menuDrawerOverlay');
+    const drawer = document.getElementById('menuDrawer');
+    if (overlay) overlay.classList.add('active');
+    if (drawer) drawer.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    console.log('✅ Menu drawer opened');
+}
+
+function closeMenuDrawer() {
+    const overlay = document.getElementById('menuDrawerOverlay');
+    const drawer = document.getElementById('menuDrawer');
+    if (overlay) overlay.classList.remove('active');
+    if (drawer) drawer.classList.remove('active');
+    document.body.style.overflow = '';
+    console.log('✅ Menu drawer closed');
+}
+
+function toggleSidebar() {
+    if (window.innerWidth <= 768) {
+        openMenuDrawer();
+    } else {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
 }
 
 // ==========================================
 // UTILITIES
 // ==========================================
-function formatRupiah(n) {
-    return 'Rp ' + Math.round(n).toLocaleString('id-ID');
-}
-
-function hashPassword(pwd) {
-    return CryptoJS.SHA256(pwd).toString();
-}
-
-function sanitize(s) {
-    return (s || '').replace(/[;'"]/g, '').trim();
-}
-
-function isValidNIK(nik) {
-    return /^\d{10,20}$/.test(nik);
-}
+function formatRupiah(n) { return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
+function hashPassword(pwd) { return CryptoJS.SHA256(pwd).toString(); }
+function sanitize(s) { return (s || '').replace(/[;'"]/g, '').trim(); }
+function isValidNIK(nik) { return /^\d{10,20}$/.test(nik); }
 
 function genMemberNo() {
     const d = new Date();
@@ -308,11 +264,8 @@ function closeModal() {
 // ==========================================
 function saveSession(user) {
     const sessionData = {
-        username: user.username,
-        role: user.role,
-        nama: user.nama || user.username,
-        loginTime: new Date().getTime(),
-        expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000)
+        username: user.username, role: user.role, nama: user.nama || user.username,
+        loginTime: new Date().getTime(), expiresAt: new Date().getTime() + (24 * 60 * 60 * 1000)
     };
     localStorage.setItem('parkir_session', JSON.stringify(sessionData));
 }
@@ -322,21 +275,16 @@ function loadSession() {
     if (!sessionStr) return null;
     try {
         const session = JSON.parse(sessionStr);
-        if (session.expiresAt && session.expiresAt > new Date().getTime()) {
-            return session;
-        } else {
-            localStorage.removeItem('parkir_session');
-            return null;
-        }
+        if (session.expiresAt && session.expiresAt > new Date().getTime()) return session;
+        localStorage.removeItem('parkir_session');
+        return null;
     } catch (e) {
         localStorage.removeItem('parkir_session');
         return null;
     }
 }
 
-function clearSession() {
-    localStorage.removeItem('parkir_session');
-}
+function clearSession() { localStorage.removeItem('parkir_session'); }
 
 function checkAuth() {
     const session = loadSession();
@@ -346,11 +294,9 @@ function checkAuth() {
             role: (session.role || 'member').toString().toLowerCase().trim(),
             nama: session.nama || session.username
         };
-        
         applyRoleUI();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').classList.add('active');
-        
         initApp();
         return true;
     }
@@ -361,18 +307,8 @@ async function initDefaultUsers() {
     const snap = await db.ref('users').once('value');
     if (!snap.exists()) {
         await db.ref('users').set({
-            admin: { 
-                username: 'admin', 
-                password: hashPassword('admin123'), 
-                role: 'admin',
-                nama: 'Administrator'
-            },
-            operator: { 
-                username: 'operator', 
-                password: hashPassword('op123'), 
-                role: 'operator',
-                nama: 'Operator Utama'
-            }
+            admin: { username: 'admin', password: hashPassword('admin123'), role: 'admin', nama: 'Administrator' },
+            operator: { username: 'operator', password: hashPassword('op123'), role: 'operator', nama: 'Operator Utama' }
         });
     }
 }
@@ -380,10 +316,7 @@ async function initDefaultUsers() {
 async function initDefaultSettings() {
     const snap = await db.ref('settings').once('value');
     if (!snap.exists()) {
-        await db.ref('settings').set({
-            tarif_motor: 1000, tarif_mobil: 3000, diskon: 10,
-            biaya_motor: 30000, biaya_mobil: 90000
-        });
+        await db.ref('settings').set({ tarif_motor: 1000, tarif_mobil: 3000, diskon: 10, biaya_motor: 30000, biaya_mobil: 90000 });
     } else {
         settings = snap.val();
     }
@@ -413,7 +346,6 @@ async function doLogin() {
     applyRoleUI();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
-    
     initApp();
     toast(`Selamat datang, ${currentUser.nama}! (${currentUser.role.toUpperCase()})`, 'success');
 }
@@ -422,8 +354,8 @@ function doLogout() {
     if (!confirm('Yakin ingin logout?')) return;
     currentUser = null;
     clearSession();
-    
-    if (scannerInstance) { try { scannerInstance.stop(); } catch(e){} }
+    if (scannerInstance) { try { scannerInstance.stop(); scannerInstance = null; } catch(e){} }
+    closeMenuDrawer();
     document.getElementById('mainApp').classList.remove('active');
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('loginPass').value = '';
@@ -476,10 +408,7 @@ async function addUser() {
     if (snap.exists()) return toast('Username sudah digunakan', 'error');
     
     await db.ref('users/' + username).set({
-        username: username,
-        nama: fullName,
-        password: hashPassword(password),
-        role: role,
+        username: username, nama: fullName, password: hashPassword(password), role: role,
         createdAt: new Date().toISOString()
     });
     
@@ -521,9 +450,7 @@ async function saveEditUser() {
     if (!fullName) return toast('Nama lengkap tidak boleh kosong', 'error');
     
     const updates = { nama: fullName };
-    if (newPassword) {
-        updates.password = hashPassword(newPassword);
-    }
+    if (newPassword) updates.password = hashPassword(newPassword);
     
     await db.ref('users/' + editingUsername).update(updates);
     toast(`✅ Data ${fullName} berhasil diperbarui`, 'success');
@@ -541,8 +468,6 @@ function applyRoleUI() {
     const role = currentUser.role;
     const nama = currentUser.nama || currentUser.username;
     
-    console.log('🎨 applyRoleUI - role:', role, '| nama:', nama);
-    
     document.getElementById('userName').textContent = nama;
     document.getElementById('userAvatar').textContent = nama[0].toUpperCase();
     document.getElementById('greetingText').textContent = `${greeting()}, ${nama}!`;
@@ -553,11 +478,9 @@ function applyRoleUI() {
     roleBadge.className = 'role-badge role-' + role;
     document.getElementById('userRole').textContent = role.toUpperCase();
     
-    // Generate menu otomatis
     generateMenus(role);
     
     let defaultPage = role === 'member' ? 'memberPortal' : 'dashboard';
-    
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById('page-' + defaultPage);
     if (targetPage) targetPage.classList.add('active');
@@ -565,19 +488,13 @@ function applyRoleUI() {
     document.getElementById('pageTitle').textContent = PAGE_TITLES[defaultPage] || 'Dashboard';
     setActiveMenu(defaultPage);
     
-    if (role === 'member') {
-        loadMemberPortal();
-    } else if (role === 'admin') {
-        refreshDashboard();
-        renderUserList();
-    } else {
-        refreshDashboard();
-    }
+    if (role === 'member') loadMemberPortal();
+    else if (role === 'admin') { refreshDashboard(); renderUserList(); }
+    else refreshDashboard();
 }
 
 function checkRoleAccess(pageId) {
     if (!currentUser) return false;
-    
     const role = (currentUser.role || '').toString().toLowerCase().trim();
     
     if (!['admin', 'operator', 'member'].includes(role)) {
@@ -587,24 +504,15 @@ function checkRoleAccess(pageId) {
     }
     
     const menuConfig = MENU_CONFIG.find(m => m.id === pageId);
-    
-    if (!menuConfig) {
-        console.warn('⚠️ Menu tidak ditemukan:', pageId);
-        return false;
-    }
+    if (!menuConfig) return false;
     
     if (!menuConfig.roles.includes(role)) {
         const roleName = role === 'admin' ? 'Admin' : role === 'operator' ? 'Operator' : 'Member';
         toast(`⛔ Akses ditolak! Halaman ini hanya untuk ${roleName}`, 'error');
-        
         setTimeout(() => {
-            if (role === 'member') {
-                showPage('memberPortal', null);
-            } else {
-                showPage('dashboard', null);
-            }
+            if (role === 'member') showPage('memberPortal', null);
+            else showPage('dashboard', null);
         }, 1500);
-        
         return false;
     }
     return true;
@@ -640,11 +548,10 @@ function showPage(pageId, el) {
     if (pageId === 'memberRiwayat') renderMemberRiwayat();
     if (pageId === 'manageUsers' && currentUser.role === 'admin') renderUserList();
     
-    if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
-}
-
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('open');
+    if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.remove('open');
+        closeMenuDrawer();
+    }
 }
 
 // ==========================================
@@ -682,12 +589,7 @@ function renderRecentActivity(parkirData) {
     }
     box.innerHTML = arr.map(h => {
         const badge = h.is_member ? '<span class="badge badge-member">MEMBER</span>' : '<span class="badge badge-reguler">REGULER</span>';
-        return `<div class="list-item">
-            <div class="list-item-info">
-                <h4>${h.nama} ${badge}</h4>
-                <p>${h.nomor_kendaraan} • ${h.waktu_masuk.substring(11,16)}</p>
-            </div>
-        </div>`;
+        return `<div class="list-item"><div class="list-item-info"><h4>${h.nama} ${badge}</h4><p>${h.nomor_kendaraan} • ${h.waktu_masuk.substring(11,16)}</p></div></div>`;
     }).join('');
 }
 
@@ -696,15 +598,9 @@ function renderRecentActivity(parkirData) {
 // ==========================================
 async function loadMemberPortal() {
     if (!currentUser || currentUser.role !== 'member') return;
-    
     const nik = currentUser.username;
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
-    
-    if (!snap.exists()) {
-        toast('Data member tidak ditemukan', 'error');
-        return;
-    }
-    
+    if (!snap.exists()) { toast('Data member tidak ditemukan', 'error'); return; }
     const member = Object.values(snap.val())[0];
     
     document.getElementById('mpNama').textContent = `Halo, ${member.nama}!`;
@@ -719,7 +615,6 @@ async function loadMemberPortal() {
     const historySnap = await db.ref('history').orderByChild('nik').equalTo(nik).once('value');
     const history = historySnap.val() ? Object.values(historySnap.val()) : [];
     const thisMonthHistory = history.filter(h => h.waktu_keluar && h.waktu_keluar.startsWith(thisMonth));
-    
     const totalBulanIni = thisMonthHistory.reduce((a,b) => a + (b.total_biaya || 0), 0);
     
     document.getElementById('mpRingkasan').innerHTML = `
@@ -738,23 +633,16 @@ async function loadMemberPortal() {
 
 async function renderMemberKartu() {
     if (!currentUser || currentUser.role !== 'member') return;
-    
     const nik = currentUser.username;
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
-    
     if (!snap.exists()) {
         document.getElementById('memberKartuPreview').innerHTML = '<p style="color:var(--text-muted);text-align:center;">Data tidak ditemukan</p>';
         return;
     }
-    
     const m = Object.values(snap.val())[0];
-    
     document.getElementById('memberKartuPreview').innerHTML = `
         <div class="member-card-preview">
-            <div class="card-header">
-                <h3>🅿️ PARKIR PREMIUM</h3>
-                <span>MEMBER CARD</span>
-            </div>
+            <div class="card-header"><h3>🅿️ PARKIR PREMIUM</h3><span>MEMBER CARD</span></div>
             <div class="card-body">
                 <div class="member-info">
                     <h4>${m.nama}</h4>
@@ -769,18 +657,14 @@ async function renderMemberKartu() {
             </div>
         </div>
     `;
-    
     setTimeout(() => {
         const el = document.getElementById('qr-member');
-        if (el && !el.hasChildNodes()) {
-            new QRCode(el, { text: m.nik, width: 100, height: 100, colorDark:'#000000', colorLight:'#ffffff' });
-        }
+        if (el && !el.hasChildNodes()) new QRCode(el, { text: m.nik, width: 100, height: 100, colorDark:'#000000', colorLight:'#ffffff' });
     }, 100);
 }
 
 function cetakKartuSaya() {
     if (!currentUser || currentUser.role !== 'member') return;
-    
     const nik = currentUser.username;
     db.ref('members').orderByChild('nik').equalTo(nik).once('value').then(snap => {
         if (!snap.exists()) return;
@@ -791,20 +675,16 @@ function cetakKartuSaya() {
 
 async function renderMemberRiwayat() {
     if (!currentUser || currentUser.role !== 'member') return;
-    
     const nik = currentUser.username;
     const snap = await db.ref('history').orderByChild('nik').equalTo(nik).once('value');
     const history = snap.val() ? Object.values(snap.val()).sort((a,b) => new Date(b.waktu_keluar) - new Date(a.waktu_keluar)) : [];
-    
     const list = document.getElementById('memberRiwayatList');
-    
     if (history.length === 0) {
         list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Belum ada riwayat parkir</p>';
         return;
     }
-    
-    list.innerHTML = history.map(h => {
-        return `<div class="list-item">
+    list.innerHTML = history.map(h => `
+        <div class="list-item">
             <div class="list-item-info">
                 <h4>${h.nomor_kendaraan} • ${h.jenis_kendaraan.toUpperCase()}</h4>
                 <p>${h.waktu_masuk.substring(0,16)} → ${h.waktu_keluar.substring(0,16)}</p>
@@ -814,8 +694,8 @@ async function renderMemberRiwayat() {
                 <p style="color:var(--success);font-weight:bold;font-size:14px;">${formatRupiah(h.total_biaya)}</p>
                 ${h.diskon_persen > 0 ? `<p style="font-size:10px;color:var(--accent-teal);">Diskon ${h.diskon_persen}%</p>` : ''}
             </div>
-        </div>`;
-    }).join('');
+        </div>
+    `).join('');
 }
 
 // ==========================================
@@ -824,29 +704,19 @@ async function renderMemberRiwayat() {
 async function cekMemberMasuk() {
     const nik = sanitize(document.getElementById('inNik').value);
     const info = document.getElementById('inInfo');
-    if (!nik) { 
-        info.style.display='block'; 
-        info.style.background='rgba(245,158,11,0.15)'; 
-        info.style.color='var(--accent-gold)'; 
-        info.textContent='⚠ Masukkan NIK terlebih dahulu'; 
-        return; 
-    }
+    if (!nik) { info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--accent-gold)'; info.textContent='⚠ Masukkan NIK terlebih dahulu'; return; }
     
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
     if (!snap.exists()) {
         selectedMember = null;
-        info.style.display='block'; 
-        info.style.background='rgba(239,68,68,0.15)'; 
-        info.style.color='var(--danger)';
+        info.style.display='block'; info.style.background='rgba(239,68,68,0.15)'; info.style.color='var(--danger)';
         info.textContent='❌ Bukan member — silakan isi data manual';
         return;
     }
     const m = Object.values(snap.val())[0];
     if (m.tgl_berlaku && new Date(m.tgl_berlaku) < new Date()) {
         selectedMember = null;
-        info.style.display='block'; 
-        info.style.background='rgba(245,158,11,0.15)'; 
-        info.style.color='var(--accent-gold)';
+        info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--accent-gold)';
         info.textContent='⚠️ Masa berlaku member habis! Perpanjang dulu.';
         return;
     }
@@ -854,9 +724,7 @@ async function cekMemberMasuk() {
     document.getElementById('inNama').value = m.nama;
     document.getElementById('inPlat').value = m.nomor_kendaraan;
     document.getElementById('inJenis').value = m.jenis_kendaraan;
-    info.style.display='block'; 
-    info.style.background='rgba(16,185,129,0.15)'; 
-    info.style.color='var(--success)';
+    info.style.display='block'; info.style.background='rgba(16,185,129,0.15)'; info.style.color='var(--success)';
     info.innerHTML = `✅ <strong>MEMBER ${m.nomor_member}</strong> | Saldo ${formatRupiah(m.saldo)} | Diskon ${settings.diskon}%`;
 }
 
@@ -892,9 +760,7 @@ async function prosesMasuk() {
         <p><strong>Kendaraan:</strong> ${plat}</p>
         <p><strong>Jenis:</strong> ${jenis.toUpperCase()}</p>
         <p><strong>Waktu Masuk:</strong> ${new Date(now).toLocaleString('id-ID')}</p>`;
-    if (selectedMember) {
-        html += `<p style="color:var(--success);margin-top:10px;">🎖️ MEMBER | Diskon ${settings.diskon}% | Tarif ${formatRupiah(tarif)}/jam</p>`;
-    }
+    if (selectedMember) html += `<p style="color:var(--success);margin-top:10px;">🎖️ MEMBER | Diskon ${settings.diskon}% | Tarif ${formatRupiah(tarif)}/jam</p>`;
     html += `<hr style="border-color:var(--border);margin:12px 0;">
         <h1 style="color:var(--accent-teal);font-size:24px;margin:10px 0;">${kode}</h1>
         <p style="color:var(--text-secondary);font-size:12px;">Tunjukkan kode ini saat keluar</p>
@@ -909,7 +775,7 @@ async function prosesMasuk() {
 }
 
 // ==========================================
-// KENDARAAN KELUAR
+// KENDARAAN KELUAR (dengan Struk Otomatis)
 // ==========================================
 async function prosesKeluar() {
     const kode = sanitize(document.getElementById('outKode').value).toUpperCase();
@@ -931,14 +797,10 @@ async function doKeluar(kode) {
     
     const tKeluar = new Date();
     const diffMs = tKeluar - tMasuk;
-    const diffHours = diffMs / 3600000;
-    let jam = Math.ceil(diffHours);
-    if (jam < 1) jam = 1;
+    let jam = Math.max(1, Math.ceil(diffMs / 3600000));
     
     const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
-    let diskonPersen = 0;
-    let tarifAkhir = tarifDasar;
-    let potongan = 0;
+    let diskonPersen = 0, tarifAkhir = tarifDasar, potongan = 0;
     
     if (data.is_member) {
         diskonPersen = settings.diskon || 0;
@@ -955,7 +817,7 @@ async function doKeluar(kode) {
             const mKey = Object.keys(mSnap.val())[0];
             const member = mSnap.val()[mKey];
             if (member.saldo < biaya) {
-                return toast(`Saldo member tidak cukup! Biaya ${formatRupiah(biaya)}, saldo ${formatRupiah(member.saldo)}`, 'error');
+                return toast(`Saldo tidak cukup! Biaya ${formatRupiah(biaya)}, saldo ${formatRupiah(member.saldo)}`, 'error');
             }
             saldoAkhir = member.saldo - biaya;
             await db.ref('members/' + mKey + '/saldo').set(saldoAkhir);
@@ -966,187 +828,19 @@ async function doKeluar(kode) {
         ...data,
         waktu_keluar: tKeluar.toISOString(),
         waktu_keluar_date: tKeluar.toISOString().split('T')[0],
-        lama_jam: jam, 
-        tarif_per_jam: tarifAkhir, 
-        diskon_persen: diskonPersen,
-        total_biaya: biaya, 
-        operator_keluar: currentUser.nama || currentUser.username,
+        lama_jam: jam, tarif_per_jam: tarifAkhir, diskon_persen: diskonPersen,
+        total_biaya: biaya, operator_keluar: currentUser.nama || currentUser.username,
         saldo_akhir: saldoAkhir
     };
+    
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    // Gunakan fungsi tampilkanStrukOtomatis
     tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir);
 }
-    
-    let struk = `
-    <div id="struk-content" class="struk" style="background:white;color:black;padding:24px;border-radius:12px;font-family:'Courier New',monospace;max-width:400px;margin:0 auto;">
-        <div style="text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px;">
-            <h3 style="font-size:18px;margin:0;">🧾 STRUK — ${tag}</h3>
-            <p style="font-size:11px;margin:4px 0 0 0;">PARKIR PREMIUM</p>
-            <p style="font-size:10px;margin:2px 0;">Kabupaten Ende</p>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Nama</span><span>${data.nama}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${tMasuk.toLocaleString('id-ID')}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${tKeluar.toLocaleString('id-ID')}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px;font-size:14px;font-weight:bold;background:#f0f0f0;margin:8px 0;border-radius:4px;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:green;"><span>Diskon Member (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:gray;"><span>Diskon</span><span>Tidak Ada (Reguler)</span></div>'}
-        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Akhir</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
-        <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;">
-            <span>TOTAL BAYAR</span>
-            <span style="color:${accent};">${formatRupiah(biaya)}</span>
-        </div>
-        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
-        <div style="margin-top:16px;padding:12px;background:#f9f9f9;border-radius:8px;font-size:11px;color:#666;">
-            <strong>Keterangan:</strong><br>
-            ${jam} jam × ${formatRupiah(tarifAkhir)} = ${formatRupiah(biaya)}<br>
-            Petugas: ${currentUser.nama || currentUser.username}
-        </div>
-        <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
-            Terima kasih 🙏<br>
-            www.parkirpremium.id
-        </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
-        <button onclick="cetakStruk()" class="btn btn-primary" style="flex:1;padding:12px;background:var(--accent-teal);color:var(--bg-dark);border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
-            🖨️ Cetak Struk
-        </button>
-        <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);border-radius:8px;font-weight:bold;cursor:pointer;">
-            Tutup
-        </button>
-    </div>`;
-    
-    showModal('Struk Parkir', struk);
-}
-
-function cetakStruk() {
-    const strukContent = document.getElementById('struk-content');
-    if (!strukContent) return;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Struk Parkir</title>
-            <style>
-                body { font-family: 'Courier New', monospace; max-width: 400px; margin: 0 auto; padding: 20px; }
-                @media print { body { margin: 0; padding: 10px; } }
-            </style>
-        </head>
-        <body>
-            ${strukContent.innerHTML}
-            <script>
-                window.onload = function() { window.print(); setTimeout(() => window.close(), 500); }
-            <\/script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-}
 
 // ==========================================
-// SCANNER
-// ==========================================
-function startScanner() {
-    if (scannerInstance) return;
-    scannerInstance = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    
-    document.getElementById('scanStatus').textContent = '📷 Scan QR: NIK (Masuk/Keluar) atau Kode Tiket (Keluar)';
-    document.getElementById('scanStatus').style.color = 'var(--accent-cyan)';
-    
-    scannerInstance.start({ facingMode: "environment" }, config,
-        async (text) => {
-            document.getElementById('scanStatus').textContent = '✅ Terdeteksi: ' + text;
-            document.getElementById('scanStatus').style.color = 'var(--accent-teal)';
-            
-            try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
-            
-            // DETEKSI FORMAT
-            const isNIK = /^\d{10,20}$/.test(text);
-            const isKodeTiket = text.toUpperCase().startsWith('PK');
-            
-            console.log('🔍 Scan:', text, '| NIK:', isNIK, '| Tiket:', isKodeTiket);
-            
-            if (isNIK) {
-                // ===== SCAN NIK MEMBER =====
-                const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
-                
-                if (!memberSnap.exists()) {
-                    toast('❌ NIK tidak terdaftar sebagai member', 'error');
-                    setTimeout(() => startScanner(), 2000);
-                    return;
-                }
-                
-                const member = Object.values(memberSnap.val())[0];
-                
-                // CEK: Apakah member sedang parkir?
-                const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(text).once('value');
-                
-                if (parkirSnap.exists()) {
-                    // ===== MEMBER SEDANG PARKIR → PROSES KELUAR OTOMATIS =====
-                    const parkirData = Object.values(parkirSnap.val())[0];
-                    const kodeTiket = parkirData.kode_tiket;
-                    
-                    toast('🚪 Member sedang parkir! Proses keluar...', 'info');
-                    
-                    // Langsung proses keluar
-                    await doKeluarByNIK(kodeTiket, member);
-                } else {
-                    // ===== MEMBER TIDAK PARKIR → PROSES MASUK =====
-                    document.getElementById('inNik').value = member.nik;
-                    document.getElementById('inNama').value = member.nama;
-                    document.getElementById('inPlat').value = member.nomor_kendaraan;
-                    document.getElementById('inJenis').value = member.jenis_kendaraan;
-                    selectedMember = member;
-                    
-                    showPage('masuk', document.querySelector('[data-page="masuk"]'));
-                    toast('✅ Member terdeteksi! Klik "Proses Masuk"', 'success');
-                }
-            } 
-            else if (isKodeTiket) {
-                // ===== SCAN KODE TIKET → PROSES KELUAR =====
-                await doKeluar(text.toUpperCase());
-            } 
-            else {
-                toast('❓ Format tidak dikenali', 'error');
-                setTimeout(() => startScanner(), 2000);
-            }
-        },
-        (err) => {}
-    ).catch(err => {
-        document.getElementById('scanStatus').textContent = '❌ Kamera error: ' + err;
-        document.getElementById('scanStatus').style.color = 'var(--danger)';
-    });
-}
-
-async function prosesScanManual() {
-    const val = sanitize(document.getElementById('scanManual').value).toUpperCase();
-    if (!val) return toast('Masukkan kode','error');
-    document.getElementById('scanManual').value = '';
-    
-    const memberSnap = await db.ref('members').orderByChild('nik').equalTo(val).once('value');
-    if (memberSnap.exists()) {
-        const m = Object.values(memberSnap.val())[0];
-        document.getElementById('inNik').value = m.nik;
-        document.getElementById('inNama').value = m.nama;
-        document.getElementById('inPlat').value = m.nomor_kendaraan;
-        document.getElementById('inJenis').value = m.jenis_kendaraan;
-        selectedMember = m;
-        showPage('masuk', document.querySelector('[data-page="masuk"]'));
-        toast('Member terdeteksi!', 'success');
-    } else {
-        await doKeluar(val);
-    }
-}
-
-// ==========================================
-// KELUAR OTOMATIS BY NIK (LANGSUNG CETAK STRUK)
+// KELUAR OTOMATIS BY NIK (Scan Kartu Member)
 // ==========================================
 async function doKeluarByNIK(kodeTiket, member) {
     const snap = await db.ref('parkir_aktif').orderByChild('kode_tiket').equalTo(kodeTiket).once('value');
@@ -1158,7 +852,6 @@ async function doKeluarByNIK(kodeTiket, member) {
     const key = Object.keys(snap.val())[0];
     const data = snap.val()[key];
     
-    // Hitung waktu & biaya
     let tMasuk = new Date(data.waktu_masuk);
     if (isNaN(tMasuk.getTime())) tMasuk = new Date(data.waktu_masuk.replace(' ', 'T'));
     
@@ -1177,7 +870,6 @@ async function doKeluarByNIK(kodeTiket, member) {
     
     const biaya = jam * tarifAkhir;
     
-    // Potong saldo member
     let saldoAkhir = null;
     if (data.is_member && data.nomor_member) {
         const mSnap = await db.ref('members').orderByChild('nomor_member').equalTo(data.nomor_member).once('value');
@@ -1195,28 +887,23 @@ async function doKeluarByNIK(kodeTiket, member) {
         }
     }
     
-    // Simpan ke history
     const historyData = {
         ...data,
         waktu_keluar: tKeluar.toISOString(),
         waktu_keluar_date: tKeluar.toISOString().split('T')[0],
-        lama_jam: jam,
-        tarif_per_jam: tarifAkhir,
-        diskon_persen: diskonPersen,
-        total_biaya: biaya,
-        operator_keluar: currentUser.nama || currentUser.username,
+        lama_jam: jam, tarif_per_jam: tarifAkhir, diskon_persen: diskonPersen,
+        total_biaya: biaya, operator_keluar: currentUser.nama || currentUser.username,
         saldo_akhir: saldoAkhir
     };
     
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    // LANGSUNG TAMPILKAN STRUK DENGAN TOMBOL CETAK
     tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir);
 }
 
 // ==========================================
-// TAMPILKAN STRUK OTOMATIS (DENGAN TOMBOL CETAK LANGSUNG)
+// TAMPILKAN STRUK OTOMATIS (dengan Tombol Cetak)
 // ==========================================
 function tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir) {
     const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
@@ -1253,37 +940,28 @@ function tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkh
         </div>
     </div>
     
-    <!-- TOMBOL AKSI -->
     <div style="display:flex;gap:10px;margin-top:20px;">
-        <button onclick="cetakStrukOtomatis()" class="btn btn-success" style="flex:2;padding:14px;font-size:15px;font-weight:bold;background:var(--success);color:white;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+        <button onclick="cetakStrukOtomatis()" style="flex:2;padding:14px;font-size:15px;font-weight:bold;background:#10b981;color:white;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
             🖨️ CETAK STRUK
         </button>
-        <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:14px;font-size:14px;">
+        <button onclick="closeModal()" style="flex:1;padding:14px;font-size:14px;background:transparent;border:1.5px solid var(--accent-teal);color:var(--accent-teal);border-radius:10px;cursor:pointer;">
             Tutup
         </button>
     </div>
     
-    <!-- NOTIFIKASI SUKSES -->
-    <div style="margin-top:16px;padding:12px;background:rgba(16,185,129,0.1);border:1px solid var(--success);border-radius:10px;text-align:center;">
-        <p style="color:var(--success);font-weight:bold;margin:0;font-size:14px;">✅ Kendaraan berhasil keluar!</p>
-        <p style="color:var(--text-secondary);font-size:12px;margin:4px 0 0 0;">Klik tombol cetak untuk print struk</p>
+    <div style="margin-top:16px;padding:12px;background:rgba(16,185,129,0.1);border:1px solid #10b981;border-radius:10px;text-align:center;">
+        <p style="color:#10b981;font-weight:bold;margin:0;font-size:14px;">✅ Kendaraan berhasil keluar!</p>
+        <p style="color:#94a3b8;font-size:12px;margin:4px 0 0 0;">Klik tombol cetak untuk print struk</p>
     </div>`;
     
     showModal('✅ Proses Keluar Berhasil', strukHTML);
     
-    // AUTO-FOCUS ke tombol cetak setelah 500ms
     setTimeout(() => {
         const cetakBtn = document.querySelector('button[onclick="cetakStrukOtomatis()"]');
-        if (cetakBtn) {
-            cetakBtn.focus();
-            cetakBtn.style.animation = 'pulse 1s ease-in-out 3';
-        }
+        if (cetakBtn) cetakBtn.focus();
     }, 500);
 }
 
-// ==========================================
-// CETAK STRUK OTOMATIS
-// ==========================================
 function cetakStrukOtomatis() {
     const strukContent = document.getElementById('struk-content');
     if (!strukContent) {
@@ -1317,11 +995,7 @@ function cetakStrukOtomatis() {
             ${strukContent.innerHTML}
             <script>
                 window.onload = function() {
-                    setTimeout(() => {
-                        window.print();
-                    }, 300);
-                    
-                    // Auto close setelah print
+                    setTimeout(() => { window.print(); }, 300);
                     window.onafterprint = function() {
                         setTimeout(() => window.close(), 500);
                     };
@@ -1333,6 +1007,110 @@ function cetakStrukOtomatis() {
     printWindow.document.close();
     
     toast('🖨️ Menyiapkan cetak...', 'success');
+}
+
+// ==========================================
+// SCANNER (Multi-Fungsi: Masuk & Keluar)
+// ==========================================
+function startScanner() {
+    if (scannerInstance) return;
+    scannerInstance = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    document.getElementById('scanStatus').textContent = '📷 Scan QR: NIK (Masuk/Keluar) atau Kode Tiket (Keluar)';
+    document.getElementById('scanStatus').style.color = 'var(--accent-cyan)';
+    
+    scannerInstance.start({ facingMode: "environment" }, config,
+        async (text) => {
+            document.getElementById('scanStatus').textContent = '✅ Terdeteksi: ' + text;
+            document.getElementById('scanStatus').style.color = 'var(--accent-teal)';
+            
+            try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
+            
+            const isNIK = /^\d{10,20}$/.test(text);
+            const isKodeTiket = text.toUpperCase().startsWith('PK');
+            
+            console.log('🔍 Scan:', text, '| NIK:', isNIK, '| Tiket:', isKodeTiket);
+            
+            if (isNIK) {
+                const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
+                
+                if (!memberSnap.exists()) {
+                    toast('❌ NIK tidak terdaftar sebagai member', 'error');
+                    setTimeout(() => startScanner(), 2000);
+                    return;
+                }
+                
+                const member = Object.values(memberSnap.val())[0];
+                const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(text).once('value');
+                
+                if (parkirSnap.exists()) {
+                    const parkirData = Object.values(parkirSnap.val())[0];
+                    const kodeTiket = parkirData.kode_tiket;
+                    
+                    toast('🚪 Member sedang parkir! Proses keluar...', 'info');
+                    await doKeluarByNIK(kodeTiket, member);
+                } else {
+                    document.getElementById('inNik').value = member.nik;
+                    document.getElementById('inNama').value = member.nama;
+                    document.getElementById('inPlat').value = member.nomor_kendaraan;
+                    document.getElementById('inJenis').value = member.jenis_kendaraan;
+                    selectedMember = member;
+                    
+                    showPage('masuk', document.querySelector('[data-page="masuk"]'));
+                    toast('✅ Member terdeteksi! Klik "Proses Masuk"', 'success');
+                }
+            } 
+            else if (isKodeTiket) {
+                await doKeluar(text.toUpperCase());
+            } 
+            else {
+                toast('❓ Format tidak dikenali', 'error');
+                setTimeout(() => startScanner(), 2000);
+            }
+        },
+        (err) => {}
+    ).catch(err => {
+        document.getElementById('scanStatus').textContent = '❌ Kamera error: ' + err;
+        document.getElementById('scanStatus').style.color = 'var(--danger)';
+    });
+}
+
+async function prosesScanManual() {
+    const val = sanitize(document.getElementById('scanManual').value);
+    if (!val) return toast('Masukkan kode','error');
+    document.getElementById('scanManual').value = '';
+    
+    const isNIK = /^\d{10,20}$/.test(val);
+    const isKodeTiket = val.toUpperCase().startsWith('PK');
+    
+    if (isNIK) {
+        const memberSnap = await db.ref('members').orderByChild('nik').equalTo(val).once('value');
+        if (memberSnap.exists()) {
+            const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(val).once('value');
+            if (parkirSnap.exists()) {
+                const parkirData = Object.values(parkirSnap.val())[0];
+                await doKeluarByNIK(parkirData.kode_tiket, Object.values(memberSnap.val())[0]);
+            } else {
+                const m = Object.values(memberSnap.val())[0];
+                document.getElementById('inNik').value = m.nik;
+                document.getElementById('inNama').value = m.nama;
+                document.getElementById('inPlat').value = m.nomor_kendaraan;
+                document.getElementById('inJenis').value = m.jenis_kendaraan;
+                selectedMember = m;
+                showPage('masuk', document.querySelector('[data-page="masuk"]'));
+                toast('✅ Member terdeteksi!', 'success');
+            }
+        } else {
+            toast('❌ NIK tidak terdaftar', 'error');
+        }
+    } 
+    else if (isKodeTiket) {
+        await doKeluar(val.toUpperCase());
+    } 
+    else {
+        toast('❓ Format tidak dikenali', 'error');
+    }
 }
 
 // ==========================================
@@ -1363,20 +1141,14 @@ async function daftarMember() {
     const berlaku = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
     
     const data = {
-        nik, nama, alamat, no_telepon: telp,
-        jenis_kendaraan: jenis, nomor_kendaraan: plat,
+        nik, nama, alamat, no_telepon: telp, jenis_kendaraan: jenis, nomor_kendaraan: plat,
         nomor_member, saldo: biaya, status: 'aktif',
-        tgl_daftar: new Date().toISOString().replace('T',' ').substring(0,19),
-        tgl_berlaku: berlaku
+        tgl_daftar: new Date().toISOString().replace('T',' ').substring(0,19), tgl_berlaku: berlaku
     };
     
     await db.ref('members').push(data);
-    
     await db.ref('users/' + nik).set({
-        username: nik,
-        password: hashPassword(nik),
-        role: 'member',
-        nama: nama,
+        username: nik, password: hashPassword(nik), role: 'member', nama: nama,
         createdAt: new Date().toISOString()
     });
     
@@ -1394,7 +1166,6 @@ async function daftarMember() {
             <p style="color:var(--accent-gold);font-weight:bold;">🔑 Info Login Member:</p>
             <p>Username: <strong>${nik}</strong></p>
             <p>Password: <strong>${nik}</strong></p>
-            <p style="color:var(--text-secondary);font-size:11px;margin-top:8px;">Sarankan member mengganti password setelah login pertama</p>
         </div>
     `);
     
@@ -1409,22 +1180,11 @@ async function renderMembers() {
     const snap = await db.ref('members').once('value');
     const all = snap.val() ? Object.values(snap.val()) : [];
     const q = (document.getElementById('searchMember')?.value || '').toLowerCase();
-    const filtered = all.filter(m => 
-        m.nama.toLowerCase().includes(q) || 
-        m.nik.includes(q) || 
-        m.nomor_member.toLowerCase().includes(q)
-    );
-    
+    const filtered = all.filter(m => m.nama.toLowerCase().includes(q) || m.nik.includes(q) || m.nomor_member.toLowerCase().includes(q));
     const totalSaldo = filtered.reduce((a,b) => a + (b.saldo||0), 0);
-    document.getElementById('memberStats').innerHTML = 
-        `📊 Total <strong>${filtered.length}</strong> member | 💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>`;
-    
+    document.getElementById('memberStats').innerHTML = `📊 Total <strong>${filtered.length}</strong> member | 💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>`;
     const list = document.getElementById('memberList');
-    if (filtered.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">👥 Belum ada member</p>';
-        return;
-    }
-    
+    if (filtered.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">👥 Belum ada member</p>'; return; }
     list.innerHTML = filtered.map(m => {
         const statusCol = m.status === 'aktif' ? 'var(--success)' : 'var(--danger)';
         return `<div class="list-item">
@@ -1447,37 +1207,27 @@ async function exportMemberCSV() {
     const snap = await db.ref('members').once('value');
     const data = snap.val() ? Object.values(snap.val()) : [];
     if (data.length === 0) return toast('Tidak ada data','error');
-    
     let csv = 'No Member,NIK,Nama,Alamat,Telepon,Jenis,Nopol,Saldo,Status,Daftar,Berlaku\n';
-    data.forEach(m => {
-        csv += `"${m.nomor_member}","${m.nik}","${m.nama}","${m.alamat||''}","${m.no_telepon||''}","${m.jenis_kendaraan}","${m.nomor_kendaraan}",${m.saldo||0},"${m.status}","${m.tgl_daftar||''}","${m.tgl_berlaku||''}"\n`;
-    });
-    
+    data.forEach(m => { csv += `"${m.nomor_member}","${m.nik}","${m.nama}","${m.alamat||''}","${m.no_telepon||''}","${m.jenis_kendaraan}","${m.nomor_kendaraan}",${m.saldo||0},"${m.status}","${m.tgl_daftar||''}","${m.tgl_berlaku||''}"\n`; });
     const blob = new Blob([csv], {type:'text/csv'});
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'member_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.href = URL.createObjectURL(blob); a.download = 'member_' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     toast('Export berhasil','success');
 }
 
 async function hapusMember(nik, nama) {
-    if (!confirm(`⚠️ PERINGATAN!\n\nAnda akan menghapus member:\n\nNama: ${nama}\nNIK: ${nik}\n\nData yang dihapus TIDAK BISA dikembalikan!\n\nLanjutkan?`)) return;
+    if (!confirm(`⚠️ PERINGATAN!\n\nHapus member:\n${nama}\nNIK: ${nik}\n\nLanjutkan?`)) return;
     if (!confirm(`Yakin 100% ingin hapus ${nama}?`)) return;
-    
     try {
         const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
         if (!snap.exists()) return toast('Member tidak ditemukan', 'error');
-        
         const key = Object.keys(snap.val())[0];
         await db.ref('members/' + key).remove();
         await db.ref('users/' + nik).remove();
-        
         toast(`✅ Member ${nama} berhasil dihapus!`, 'success');
         renderMembers();
-    } catch (err) {
-        toast('❌ Gagal hapus: ' + err.message, 'error');
-    }
+    } catch (err) { toast('❌ Gagal hapus: ' + err.message, 'error'); }
 }
 
 async function showDetailMember(nik) {
@@ -1494,8 +1244,7 @@ async function showDetailMember(nik) {
             <p><strong>Alamat:</strong> ${m.alamat||'-'}</p>
             <p><strong>Kendaraan:</strong> ${m.nomor_kendaraan} (${m.jenis_kendaraan.toUpperCase()})</p>
             <p><strong>Saldo:</strong> <span style="color:var(--success);font-weight:bold;">${formatRupiah(m.saldo||0)}</span></p>
-            <p><strong>Status:</strong> <span style="color:${m.status==='aktif'?'var(--success)':'var(--danger)'};">${m.status.toUpperCase()}</span></p>
-            <p><strong>Daftar:</strong> ${m.tgl_daftar||'-'}</p>
+            <p><strong>Status:</strong> ${m.status.toUpperCase()}</p>
             <p><strong>Berlaku s/d:</strong> ${formatTanggalSingkat(m.tgl_berlaku)}</p>
         </div>
     `);
@@ -1508,25 +1257,13 @@ async function renderCetak() {
     const snap = await db.ref('members').once('value');
     const all = snap.val() ? Object.values(snap.val()) : [];
     const q = (document.getElementById('searchCetak')?.value || '').toLowerCase();
-    const filtered = all.filter(m => 
-        m.nama.toLowerCase().includes(q) || 
-        m.nik.includes(q) || 
-        m.nomor_member.toLowerCase().includes(q)
-    );
-    
+    const filtered = all.filter(m => m.nama.toLowerCase().includes(q) || m.nik.includes(q) || m.nomor_member.toLowerCase().includes(q));
     const list = document.getElementById('cetakList');
-    if (filtered.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Tidak ditemukan</p>';
-        return;
-    }
-    
+    if (filtered.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Tidak ditemukan</p>'; return; }
     list.innerHTML = filtered.map((m, i) => `
         <div class="card" style="margin-bottom:16px;">
             <div class="member-card-preview print-area">
-                <div class="card-header">
-                    <h3>🅿️ PARKIR PREMIUM</h3>
-                    <span>MEMBER CARD</span>
-                </div>
+                <div class="card-header"><h3>🅿️ PARKIR PREMIUM</h3><span>MEMBER CARD</span></div>
                 <div class="card-body">
                     <div class="member-info">
                         <h4>${m.nama}</h4>
@@ -1546,53 +1283,17 @@ async function renderCetak() {
             </div>
         </div>
     `).join('');
-    
     setTimeout(() => {
         filtered.forEach((m, i) => {
             const el = document.getElementById('qr-' + i);
-            if (el && !el.hasChildNodes()) {
-                new QRCode(el, { text: m.nik, width: 100, height: 100, colorDark:'#000000', colorLight:'#ffffff' });
-            }
+            if (el && !el.hasChildNodes()) new QRCode(el, { text: m.nik, width: 100, height: 100, colorDark:'#000000', colorLight:'#ffffff' });
         });
     }, 100);
 }
 
 function cetakKartu(i, no, nama, nik, plat, jenis, saldo, berlaku) {
     const win = window.open('', '_blank');
-    win.document.write(`
-        <html><head><title>Kartu Member - ${nama}</title>
-        <style>
-            body{font-family:Arial;margin:20px;}
-            .card{background:linear-gradient(135deg,#1a237e,#0d47a1);color:white;padding:24px;border-radius:16px;max-width:400px;margin:0 auto;border:2px solid #00e5a0;}
-            .header{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:10px;margin-bottom:12px;}
-            .header h2{color:#ffd700;margin:0;}
-            .body{display:flex;gap:16px;}
-            .info h3{margin:0 0 4px 0;font-size:18px;}
-            .info .no{color:#00e5a0;font-size:12px;margin-bottom:10px;}
-            .info p{font-size:11px;margin:3px 0;}
-            .footer{display:flex;justify-content:space-between;margin-top:12px;font-size:10px;opacity:0.7;}
-            @media print{body{margin:0;}}
-        </style></head><body>
-        <div class="card">
-            <div class="header"><h2>🅿️ PARKIR PREMIUM</h2><span>MEMBER CARD</span></div>
-            <div class="body">
-                <div class="info">
-                    <h3>${nama}</h3>
-                    <div class="no">${no}</div>
-                    <p>NIK: ${nik}</p>
-                    <p>Kendaraan: ${plat}</p>
-                    <p>Jenis: ${jenis.toUpperCase()}</p>
-                    <p style="color:#ffd700;font-weight:bold;">Saldo: ${formatRupiah(saldo)}</p>
-                    <p style="font-size:10px;">Berlaku: ${formatTanggalSingkat(berlaku)}</p>
-                </div>
-                <div id="qr"></div>
-            </div>
-            <div class="footer"><span>Daftar: ${formatTanggalSingkat(new Date().toISOString())}</span><span>www.parkirpremium.id</span></div>
-        </div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-        <script>new QRCode(document.getElementById('qr'),{text:'${nik}',width:100,height:100});setTimeout(()=>window.print(),500);<\/script>
-        </body></html>
-    `);
+    win.document.write(`<html><head><title>Kartu - ${nama}</title><style>body{font-family:Arial;margin:20px;}.card{background:linear-gradient(135deg,#1a237e,#0d47a1);color:white;padding:24px;border-radius:16px;max-width:400px;margin:0 auto;border:2px solid #00e5a0;}.header{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:10px;margin-bottom:12px;}.header h2{color:#ffd700;margin:0;}.body{display:flex;gap:16px;}.info h3{margin:0 0 4px 0;font-size:18px;}.info .no{color:#00e5a0;font-size:12px;margin-bottom:10px;}.info p{font-size:11px;margin:3px 0;}@media print{body{margin:0;}}</style></head><body><div class="card"><div class="header"><h2>🅿️ PARKIR PREMIUM</h2><span>MEMBER CARD</span></div><div class="body"><div class="info"><h3>${nama}</h3><div class="no">${no}</div><p>NIK: ${nik}</p><p>Kendaraan: ${plat}</p><p>Jenis: ${jenis.toUpperCase()}</p><p style="color:#ffd700;font-weight:bold;">Saldo: ${formatRupiah(saldo)}</p><p style="font-size:10px;">Berlaku: ${formatTanggalSingkat(berlaku)}</p></div><div id="qr"></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('qr'),{text:'${nik}',width:100,height:100});setTimeout(()=>window.print(),500);<\/script></body></html>`);
     win.document.close();
 }
 
@@ -1602,132 +1303,68 @@ function cetakKartu(i, no, nama, nik, plat, jenis, saldo, berlaku) {
 async function cariMemberTopup() {
     const q = sanitize(document.getElementById('topupSearch').value);
     if (!q) return toast('Masukkan NIK atau Nomor Member','error');
-    
     let snap = await db.ref('members').orderByChild('nik').equalTo(q).once('value');
     if (!snap.exists()) snap = await db.ref('members').orderByChild('nomor_member').equalTo(q).once('value');
     if (!snap.exists()) return toast('Member tidak ditemukan','error');
-    
     selectedMember = Object.values(snap.val())[0];
     document.getElementById('topupInfo').style.display = 'block';
-    document.getElementById('topupInfo').innerHTML = `
-        <div class="list-item">
-            <div class="list-item-info">
-                <h4>👤 ${selectedMember.nama}</h4>
-                <p style="color:var(--accent-teal);">${selectedMember.nomor_member}</p>
-                <p>${selectedMember.nomor_kendaraan} | ${selectedMember.jenis_kendaraan.toUpperCase()}</p>
-                <p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(selectedMember.saldo||0)}</p>
-                <p style="font-size:11px;">Berlaku s/d ${formatTanggalSingkat(selectedMember.tgl_berlaku)}</p>
-            </div>
-        </div>
-    `;
+    document.getElementById('topupInfo').innerHTML = `<div class="list-item"><div class="list-item-info"><h4>👤 ${selectedMember.nama}</h4><p style="color:var(--accent-teal);">${selectedMember.nomor_member}</p><p>${selectedMember.nomor_kendaraan} | ${selectedMember.jenis_kendaraan.toUpperCase()}</p><p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(selectedMember.saldo||0)}</p></div></div>`;
     document.getElementById('topupNominal').style.display = 'block';
 }
 
 async function prosesTopup(jumlah) {
-    if (isTopupProcessing) return;
-    if (!selectedMember) return toast('Cari member dulu','error');
-
+    if (isTopupProcessing || !selectedMember) return;
     isTopupProcessing = true;
     const btns = document.querySelectorAll('#topupNominal .btn');
     btns.forEach(b => { b.disabled = true; b.style.opacity = '0.5'; });
-
     try {
         const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
         if (!snap.exists()) return toast('Member tidak ditemukan','error');
         const key = Object.keys(snap.val())[0];
         const member = snap.val()[key];
-        
         const saldoBaru = (member.saldo || 0) + jumlah;
         const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
-        
         await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
-        
-        showModal('Topup Berhasil', `
-            <div style="text-align:center;padding:20px;">
-                <h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2>
-                <p style="margin:16px 0;">Nominal: <strong style="color:var(--accent-gold);">${formatRupiah(jumlah)}</strong></p>
-                <p>Saldo Baru: <strong style="color:var(--success);font-size:20px;">${formatRupiah(saldoBaru)}</strong></p>
-                <p style="margin-top:10px;color:var(--text-secondary);font-size:12px;">Masa berlaku diperpanjang sampai ${formatTanggalSingkat(berlakuBaru)}</p>
-            </div>
-        `);
-        
+        showModal('Topup Berhasil', `<div style="text-align:center;padding:20px;"><h2 style="color:var(--success);">✅ TOPUP BERHASIL</h2><p style="margin:16px 0;">Nominal: <strong style="color:var(--accent-gold);">${formatRupiah(jumlah)}</strong></p><p>Saldo Baru: <strong style="color:var(--success);font-size:20px;">${formatRupiah(saldoBaru)}</strong></p></div>`);
         selectedMember = null;
         document.getElementById('topupSearch').value = '';
         document.getElementById('topupInfo').style.display = 'none';
         document.getElementById('topupNominal').style.display = 'none';
-    } catch (err) {
-        toast('Gagal topup: ' + err.message, 'error');
-    } finally {
+    } catch (err) { toast('Gagal topup: ' + err.message, 'error'); } finally {
         isTopupProcessing = false;
         btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
     }
 }
 
 // ==========================================
-// PARKIR AKTIF
+// PARKIR AKTIF, HISTORY, LAPORAN
 // ==========================================
 async function renderParkirAktif() {
     const snap = await db.ref('parkir_aktif').once('value');
     const data = snap.val() ? Object.values(snap.val()) : [];
     const list = document.getElementById('parkirAktifList');
-    
-    if (data.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Tidak ada kendaraan parkir</p>';
-        return;
-    }
-    
+    if (data.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Tidak ada kendaraan parkir</p>'; return; }
     list.innerHTML = `<p style="color:var(--accent-teal);font-size:12px;margin-bottom:12px;">Total: <strong>${data.length}</strong> kendaraan</p>` +
         data.map(d => {
             const tag = d.is_member ? '<span class="badge badge-member">🎖️ MEMBER</span>' : '<span class="badge badge-reguler">👤 REGULER</span>';
-            return `<div class="list-item">
-                <div class="list-item-info">
-                    <h4>${d.nama} ${tag}</h4>
-                    <p>Plat: ${d.nomor_kendaraan}</p>
-                    <p>Jenis: ${d.jenis_kendaraan.toUpperCase()} • Masuk: ${d.waktu_masuk.substring(5,16)}</p>
-                    <p style="color:var(--text-muted);font-size:11px;">${d.kode_tiket}</p>
-                </div>
-                <button class="btn btn-danger btn-sm" onclick="doKeluar('${d.kode_tiket}')">Keluar</button>
-            </div>`;
+            return `<div class="list-item"><div class="list-item-info"><h4>${d.nama} ${tag}</h4><p>Plat: ${d.nomor_kendaraan}</p><p>Jenis: ${d.jenis_kendaraan.toUpperCase()} • Masuk: ${d.waktu_masuk.substring(5,16)}</p><p style="color:var(--text-muted);font-size:11px;">${d.kode_tiket}</p></div><button class="btn btn-danger btn-sm" onclick="doKeluar('${d.kode_tiket}')">Keluar</button></div>`;
         }).join('');
 }
 
-// ==========================================
-// HISTORY
-// ==========================================
 async function renderHistory() {
     const snap = await db.ref('history').limitToLast(80).once('value');
     const data = snap.val() ? Object.values(snap.val()).sort((a,b) => new Date(b.waktu_keluar) - new Date(a.waktu_keluar)) : [];
-    
     const total = data.reduce((a,b) => a + (b.total_biaya||0), 0);
     const nMember = data.filter(h => h.is_member).length;
-    document.getElementById('historyStats').innerHTML = 
-        `📊 <strong>${data.length}</strong> transaksi | 💰 Total <strong>${formatRupiah(total)}</strong> | 🎖️ Member ${nMember} | 👤 Reguler ${data.length-nMember}`;
-    
+    document.getElementById('historyStats').innerHTML = `📊 <strong>${data.length}</strong> transaksi | 💰 Total <strong>${formatRupiah(total)}</strong> | 🎖️ Member ${nMember} | 👤 Reguler ${data.length-nMember}`;
     const list = document.getElementById('historyList');
-    if (data.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Belum ada history</p>';
-        return;
-    }
-    
+    if (data.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">📭 Belum ada history</p>'; return; }
     list.innerHTML = data.map(h => {
         const col = h.is_member ? 'var(--success)' : 'var(--accent-gold)';
-        return `<div class="list-item">
-            <div class="list-item-info">
-                <h4 style="color:${col};">${h.is_member?'🎖️':'👤'} ${h.nama}</h4>
-                <p>${h.nomor_kendaraan} | ${h.jenis_kendaraan.toUpperCase()} | ${h.lama_jam} jam</p>
-                <p style="font-size:11px;color:var(--text-muted);">Masuk ${h.waktu_masuk.substring(5,16)} → Keluar ${h.waktu_keluar.substring(11,16)}</p>
-                <p style="font-size:11px;color:var(--accent-teal);">👮 Petugas: ${h.operator_keluar || '-'}</p>
-            </div>
-            <div style="text-align:right;">
-                <p style="color:${col};font-weight:bold;font-size:14px;">${formatRupiah(h.total_biaya)}</p>
-            </div>
-        </div>`;
+        return `<div class="list-item"><div class="list-item-info"><h4 style="color:${col};">${h.is_member?'🎖️':'👤'} ${h.nama}</h4><p>${h.nomor_kendaraan} | ${h.jenis_kendaraan.toUpperCase()} | ${h.lama_jam} jam</p><p style="font-size:11px;color:var(--text-muted);">Masuk ${h.waktu_masuk.substring(5,16)} → Keluar ${h.waktu_keluar.substring(11,16)}</p><p style="font-size:11px;color:var(--accent-teal);">👮 Petugas: ${h.operator_keluar || '-'}</p></div><div style="text-align:right;"><p style="color:${col};font-weight:bold;font-size:14px;">${formatRupiah(h.total_biaya)}</p></div></div>`;
     }).join('');
 }
 
-// ==========================================
-// LAPORAN
-// ==========================================
 async function renderLaporan() {
     const filter = document.getElementById('laporanFilter').value;
     let snap;
@@ -1738,28 +1375,15 @@ async function renderLaporan() {
         snap = await db.ref('history').limitToLast(200).once('value');
     }
     const data = snap.val() ? Object.values(snap.val()) : [];
-    
     const total = data.reduce((a,b) => a + (b.total_biaya||0), 0);
     const motor = data.filter(h => h.jenis_kendaraan === 'motor').length;
     const mobil = data.filter(h => h.jenis_kendaraan === 'mobil').length;
     const member = data.filter(h => h.is_member).length;
-    
-    document.getElementById('laporanStats').innerHTML = `
-        <p style="margin-bottom:8px;">📊 <strong>${data.length}</strong> kendaraan</p>
-        <p style="margin-bottom:8px;">🏍️ Motor ${motor} | 🚙 Mobil ${mobil}</p>
-        <p style="margin-bottom:8px;">🎖️ Member ${member} | 👤 Reguler ${data.length-member}</p>
-        <p style="color:var(--accent-gold);font-weight:bold;font-size:16px;">💰 Pendapatan: ${formatRupiah(total)}</p>
-    `;
-    
+    document.getElementById('laporanStats').innerHTML = `<p style="margin-bottom:8px;">📊 <strong>${data.length}</strong> kendaraan</p><p style="margin-bottom:8px;">🏍️ Motor ${motor} | 🚙 Mobil ${mobil}</p><p style="margin-bottom:8px;">🎖️ Member ${member} | 👤 Reguler ${data.length-member}</p><p style="color:var(--accent-gold);font-weight:bold;font-size:16px;">💰 Pendapatan: ${formatRupiah(total)}</p>`;
     const list = document.getElementById('laporanList');
     list.innerHTML = data.slice(0,30).map(h => {
         const col = h.is_member ? 'var(--success)' : 'var(--accent-gold)';
-        return `<div class="list-item" style="padding:10px;">
-            <span style="width:10%;">${h.is_member?'🎖️':'👤'}</span>
-            <span style="width:30%;font-size:12px;">${h.nama.substring(0,14)}</span>
-            <span style="width:25%;font-size:11px;color:var(--text-secondary);">${h.nomor_kendaraan}</span>
-            <span style="width:35%;text-align:right;color:${col};font-weight:bold;font-size:13px;">${formatRupiah(h.total_biaya)}</span>
-        </div>`;
+        return `<div class="list-item" style="padding:10px;"><span style="width:10%;">${h.is_member?'🎖️':'👤'}</span><span style="width:30%;font-size:12px;">${h.nama.substring(0,14)}</span><span style="width:25%;font-size:11px;color:var(--text-secondary);">${h.nomor_kendaraan}</span><span style="width:35%;text-align:right;color:${col};font-weight:bold;font-size:13px;">${formatRupiah(h.total_biaya)}</span></div>`;
     }).join('');
 }
 
@@ -1767,16 +1391,11 @@ async function exportLaporanCSV() {
     const snap = await db.ref('history').limitToLast(3000).once('value');
     const data = snap.val() ? Object.values(snap.val()) : [];
     if (data.length === 0) return toast('Tidak ada data','error');
-    
     let csv = 'No,NIK,Nama,Nopol,Jenis,Masuk,Keluar,Jam,Tarif,Diskon%,Total,Member,Petugas Masuk,Petugas Keluar\n';
-    data.forEach((h,i) => {
-        csv += `${i+1},"${h.nik}","${h.nama}","${h.nomor_kendaraan}","${h.jenis_kendaraan}","${h.waktu_masuk}","${h.waktu_keluar}",${h.lama_jam},${h.tarif_per_jam},${h.diskon_persen||0},${h.total_biaya},"${h.is_member?'Ya':'Tidak'}","${h.operator_masuk||''}","${h.operator_keluar||''}"\n`;
-    });
-    
+    data.forEach((h,i) => { csv += `${i+1},"${h.nik}","${h.nama}","${h.nomor_kendaraan}","${h.jenis_kendaraan}","${h.waktu_masuk}","${h.waktu_keluar}",${h.lama_jam},${h.tarif_per_jam},${h.diskon_persen||0},${h.total_biaya},"${h.is_member?'Ya':'Tidak'}","${h.operator_masuk||''}","${h.operator_keluar||''}"\n`; });
     const blob = new Blob([csv], {type:'text/csv'});
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'laporan_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.href = URL.createObjectURL(blob); a.download = 'laporan_' + new Date().toISOString().split('T')[0] + '.csv';
     a.click();
     toast('Export berhasil','success');
 }
@@ -1798,10 +1417,8 @@ async function simpanSetting() {
     const tm = parseInt(document.getElementById('setMotor').value);
     const tb = parseInt(document.getElementById('setMobil').value);
     const d = parseInt(document.getElementById('setDiskon').value);
-    
     if (isNaN(tm) || isNaN(tb) || tm < 500 || tb < 500) return toast('Tarif minimal Rp 500','error');
     if (isNaN(d) || d < 0 || d > 100) return toast('Diskon antara 0-100%','error');
-    
     await db.ref('settings').update({ tarif_motor: tm, tarif_mobil: tb, diskon: d });
     settings = { ...settings, tarif_motor: tm, tarif_mobil: tb, diskon: d };
     toast('Pengaturan berhasil disimpan!','success');
@@ -1819,129 +1436,20 @@ async function initApp() {
     await initDefaultSettings();
     if (currentUser && currentUser.role !== 'member') {
         refreshDashboard();
-        if (currentUser.role === 'admin') {
-            renderUserList();
-        }
+        if (currentUser.role === 'admin') renderUserList();
     } else if (currentUser && currentUser.role === 'member') {
         loadMemberPortal();
     }
 }
 
-document.getElementById('loginPass').addEventListener('keypress', e => {
-    if (e.key === 'Enter') doLogin();
-});
-
+document.getElementById('loginPass').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
 setInterval(updateClock, 1000);
 updateClock();
-
 initDefaultUsers();
 
 window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (!checkAuth()) {
-            console.log('ℹ️ Silakan login');
-        }
-    }, 500);
+    setTimeout(() => { if (!checkAuth()) console.log('ℹ️ Silakan login'); }, 500);
 });
 
-document.getElementById('modal').addEventListener('click', e => {
-    if (e.target.id === 'modal') closeModal();
-});
-
-document.getElementById('editUserModal').addEventListener('click', e => {
-    if (e.target.id === 'editUserModal') closeEditUserModal();
-});
-// ==========================================
-// MENU DRAWER FUNCTIONS (UNTUK MOBILE)
-// ==========================================
-function openMenuDrawer() {
-    const overlay = document.getElementById('menuDrawerOverlay');
-    const drawer = document.getElementById('menuDrawer');
-    if (overlay) overlay.classList.add('active');
-    if (drawer) drawer.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    console.log('✅ Menu drawer opened');
-}
-
-function closeMenuDrawer() {
-    const overlay = document.getElementById('menuDrawerOverlay');
-    const drawer = document.getElementById('menuDrawer');
-    if (overlay) overlay.classList.remove('active');
-    if (drawer) drawer.classList.remove('active');
-    document.body.style.overflow = '';
-    console.log('✅ Menu drawer closed');
-}
-
-// Update fungsi toggleSidebar
-function toggleSidebar() {
-    if (window.innerWidth <= 768) {
-        openMenuDrawer();
-    } else {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-}
-
-// Generate Menu Drawer untuk Mobile
-function generateDrawerMenu(menus) {
-    const drawerMenu = document.getElementById('drawerMenu');
-    if (!drawerMenu) {
-        console.error('❌ drawerMenu element not found!');
-        return;
-    }
-    
-    const groups = {
-        utama: { title: '📂 Utama', items: [] },
-        member: { title: '👥 Member', items: [] },
-        laporan: { title: '📊 Laporan', items: [] },
-        memberPortal: { title: '🏠 Portal Member', items: [] }
-    };
-    
-    menus.forEach(menu => {
-        if (groups[menu.group]) groups[menu.group].items.push(menu);
-    });
-    
-    let html = '';
-    Object.keys(groups).forEach(groupKey => {
-        const group = groups[groupKey];
-        if (group.items.length === 0) return;
-        
-        html += `<div class="nav-section-title">${group.title}</div>`;
-        group.items.forEach(menu => {
-            html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this); closeMenuDrawer();"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
-        });
-    });
-    
-    drawerMenu.innerHTML = html;
-    console.log('✅ Drawer menu generated. Total items:', menus.length);
-}
-
-// Update fungsi generateMenus untuk memanggil generateDrawerMenu
-function generateMenus(userRole) {
-    console.log('🔧 Generating menus for role:', userRole);
-    
-    const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
-    console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
-    
-    generateSidebarMenu(filteredMenus);
-    generateDrawerMenu(filteredMenus);  // ← INI YANG BARU
-    generateQuickActions(filteredMenus);
-}
-
-// Update fungsi setActiveMenu untuk sync drawer
-function setActiveMenu(pageId) {
-    // Set active di sidebar (laptop)
-    document.querySelectorAll('#sidebarMenu .nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
-    });
-    
-    // Set active di drawer (mobile)
-    document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.getAttribute('data-page') === pageId) {
-            item.classList.add('active');
-        }
-    });
-}
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+document.getElementById('editUserModal').addEventListener('click', e => { if (e.target.id === 'editUserModal') closeEditUserModal(); });
