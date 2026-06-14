@@ -897,7 +897,34 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     </div>
 
     <!-- Bottom Navigation akan di-generate otomatis oleh JavaScript -->
-    <nav class="mobile-bottom-nav" id="mobileNav"></nav>
+    <!-- MENU DRAWER untuk Mobile (Tampil seperti Sidebar Laptop) -->
+<div class="menu-drawer-overlay" id="menuDrawerOverlay" onclick="closeMenuDrawer()"></div>
+<div class="menu-drawer" id="menuDrawer">
+    <div class="menu-drawer-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="sidebar-logo">
+                <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo">
+            </div>
+            <div>
+                <h3 style="font-size:14px;margin:0;color:var(--accent-teal);">PARKIR PREMIUM</h3>
+                <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v9.0</p>
+            </div>
+        </div>
+        <button class="menu-drawer-close" onclick="closeMenuDrawer()">✕</button>
+    </div>
+    
+    <!-- Menu akan di-generate otomatis oleh JavaScript -->
+    <div class="nav-section" id="drawerMenu"></div>
+    
+    <div class="nav-section">
+        <div class="nav-item" onclick="doLogout(); closeMenuDrawer();" style="color:var(--danger);">
+            <span class="icon">🚪</span>Logout
+        </div>
+    </div>
+</div>
+
+<!-- HAPUS bagian ini jika ada: -->
+<!-- <nav class="mobile-bottom-nav" id="mobileNav"></nav> -->
 </div>
 
 <!-- MODAL UTAMA -->
