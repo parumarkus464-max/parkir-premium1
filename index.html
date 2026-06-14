@@ -519,6 +519,9 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 <div class="menu-grid" id="quickActions"></div>
 
                 <div class="card-title" style="margin:24px 0 12px;">🕐 Aktivitas Terbaru</div>
+                <!-- Notifikasi Pembayaran Pending -->
+                <div id="pendingNotif" style="display:none;background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:12px;margin-bottom:16px;color:var(--warning);font-size:13px;">
+                </div>
                 <div class="card" id="recentActivity">
                     <p style="color:var(--text-muted);text-align:center;">Memuat data...</p>
                 </div>
@@ -721,7 +724,15 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     </div>
                 </div>
             </div>
-
+            
+            <!-- PEMBAYARAN PENDING -->
+            <div class="page" id="page-pendingPayments">
+                <div class="card">
+                    <div class="card-title"><span class="icon">⏳</span>Pembayaran Pending</div>
+                    <div id="pendingStats" style="margin-bottom:16px;"></div>
+                    <div id="pendingList"></div>
+                </div>
+            </div>
             <!-- PARKIR AKTIF -->
             <div class="page" id="page-parkirAktif">
                 <div class="card">
