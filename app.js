@@ -25,29 +25,29 @@ let isTopupProcessing = false;
 let editingUsername = null;
 
 // ==========================================
-// KONFIGURASI MENU (Single Source of Truth)
+// KONFIGURASI MENU LENGKAP (Single Source of Truth)
 // ==========================================
 const MENU_CONFIG = [
-    // Menu Utama - Admin & Operator
+    // ===== MENU UTAMA (Admin & Operator) =====
     { id: 'dashboard', icon: '📊', label: 'Dashboard', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 1 },
-    { id: 'masuk', icon: '🚪', label: 'Masuk', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 2 },
-    { id: 'scanner', icon: '📷', label: 'Scan', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 3 },
-    { id: 'keluar', icon: '🔑', label: 'Keluar', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 4 },
+    { id: 'masuk', icon: '🚪', label: 'Kendaraan Masuk', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 2 },
+    { id: 'scanner', icon: '📷', label: 'Scan QR', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 3 },
+    { id: 'keluar', icon: '🔑', label: 'Kendaraan Keluar', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 4 },
     { id: 'parkirAktif', icon: '🚦', label: 'Parkir Aktif', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 5 },
     
-    // Menu Member Management - Admin Only
+    // ===== MENU MEMBER MANAGEMENT (Admin Only) =====
     { id: 'daftarMember', icon: '👤', label: 'Daftar Member', roles: ['admin'], group: 'member', mobilePriority: 6 },
     { id: 'dataMember', icon: '🗂️', label: 'Data Member', roles: ['admin'], group: 'member', mobilePriority: 7 },
     { id: 'cetakKartu', icon: '🧾', label: 'Cetak Kartu', roles: ['admin'], group: 'member', mobilePriority: 8 },
     { id: 'topup', icon: '💰', label: 'Topup Saldo', roles: ['admin'], group: 'member', mobilePriority: 9 },
     
-    // Menu Laporan - Admin Only
+    // ===== MENU LAPORAN (Admin Only) =====
     { id: 'history', icon: '⏱️', label: 'History', roles: ['admin'], group: 'laporan', mobilePriority: 10 },
     { id: 'laporan', icon: '📑', label: 'Laporan', roles: ['admin'], group: 'laporan', mobilePriority: 11 },
     { id: 'setting', icon: '⚙️', label: 'Pengaturan', roles: ['admin'], group: 'laporan', mobilePriority: 12 },
     { id: 'manageUsers', icon: '👥', label: 'Manage User', roles: ['admin'], group: 'laporan', mobilePriority: 13 },
     
-    // Menu Member Portal - Member Only
+    // ===== MENU MEMBER PORTAL (Member Only) =====
     { id: 'memberPortal', icon: '🏠', label: 'Portal Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 1 },
     { id: 'memberKartu', icon: '🎫', label: 'Kartu Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 2 },
     { id: 'memberRiwayat', icon: '📜', label: 'Riwayat Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 3 },
@@ -62,10 +62,14 @@ const PAGE_TITLES = {
 };
 
 // ==========================================
-// GENERATE MENU OTOMATIS (Sinkron Desktop & Mobile)
+// GENERATE MENU OTOMATIS (Dengan Debug)
 // ==========================================
 function generateMenus(userRole) {
+    console.log('🔧 Generating menus for role:', userRole);
+    
     const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
+    console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
+    
     generateSidebarMenu(filteredMenus);
     generateBottomNav(filteredMenus);
     generateQuickActions(filteredMenus);
@@ -73,17 +77,24 @@ function generateMenus(userRole) {
 
 function generateSidebarMenu(menus) {
     const sidebarMenu = document.getElementById('sidebarMenu');
-    if (!sidebarMenu) return;
+    if (!sidebarMenu) {
+        console.error('❌ sidebarMenu element not found!');
+        return;
+    }
     
     const groups = {
-        utama: { title: 'Utama', items: [] },
-        member: { title: 'Member', items: [] },
-        laporan: { title: 'Laporan', items: [] },
-        memberPortal: { title: 'Portal Member', items: [] }
+        utama: { title: '📂 Utama', items: [] },
+        member: { title: '👥 Member', items: [] },
+        laporan: { title: '📊 Laporan', items: [] },
+        memberPortal: { title: '🏠 Portal Member', items: [] }
     };
     
     menus.forEach(menu => {
-        if (groups[menu.group]) groups[menu.group].items.push(menu);
+        if (groups[menu.group]) {
+            groups[menu.group].items.push(menu);
+        } else {
+            console.warn('⚠️ Menu group tidak dikenali:', menu.group, menu.id);
+        }
     });
     
     let html = '';
@@ -98,29 +109,48 @@ function generateSidebarMenu(menus) {
     });
     
     sidebarMenu.innerHTML = html;
+    console.log('✅ Sidebar menu generated. Total items:', menus.length);
 }
 
 function generateBottomNav(menus) {
     const bottomNav = document.getElementById('mobileNav');
-    if (!bottomNav) return;
+    if (!bottomNav) {
+        console.error('❌ mobileNav element not found!');
+        return;
+    }
     
+    // Ambil menu dengan priority 1-4 untuk bottom nav
     const navMenus = menus
         .filter(m => m.mobilePriority <= 4)
-        .sort((a, b) => a.mobilePriority - b.mobilePriority)
-        .slice(0, 4);
+        .sort((a, b) => a.mobilePriority - b.mobilePriority);
+    
+    console.log('📱 Bottom nav menus:', navMenus.map(m => m.id));
     
     let html = '';
     navMenus.forEach((menu, index) => {
         html += `<a class="mobile-nav-item ${index === 0 ? 'active' : ''}" data-page="${menu.id}" onclick="showPage('${menu.id}', this)"><span class="icon">${menu.icon}</span><span>${menu.label}</span></a>`;
     });
     
+    // Tambah tombol Logout
     html += `<a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon">🚪</span><span>Logout</span></a>`;
+    
     bottomNav.innerHTML = html;
+    console.log('✅ Bottom nav generated. Total items:', navMenus.length + 1);
 }
 
 function generateQuickActions(menus) {
     const container = document.getElementById('quickActions');
     if (!container) return;
+    
+    // Untuk Admin/Operator: tampilkan 4 aksi cepat
+    // Untuk Member: tampilkan info berbeda
+    const role = currentUser?.role;
+    
+    if (role === 'member') {
+        // Member tidak perlu aksi cepat, kosongkan
+        container.innerHTML = '';
+        return;
+    }
     
     const actions = menus.filter(m => ['masuk', 'keluar', 'scanner', 'daftarMember'].includes(m.id));
     
@@ -144,7 +174,7 @@ function generateQuickActions(menus) {
     
     container.innerHTML = actions.map(menu => `
         <div class="menu-tile" onclick="showPage('${menu.id}')">
-            <div class="tile-icon" style="background:${colors[menu.id]};color:${textColors[menu.id]};">${menu.icon}</div>
+            <div class="tile-icon" style="background:${colors[menu.id] || 'rgba(0,229,160,0.15)'};color:${textColors[menu.id] || 'var(--accent-teal)'};">${menu.icon}</div>
             <div class="tile-label">${menu.label}</div>
         </div>
     `).join('');
@@ -463,6 +493,8 @@ function applyRoleUI() {
     const role = currentUser.role;
     const nama = currentUser.nama || currentUser.username;
     
+    console.log('🎨 applyRoleUI - role:', role, '| nama:', nama);
+    
     document.getElementById('userName').textContent = nama;
     document.getElementById('userAvatar').textContent = nama[0].toUpperCase();
     document.getElementById('greetingText').textContent = `${greeting()}, ${nama}!`;
@@ -508,7 +540,10 @@ function checkRoleAccess(pageId) {
     
     const menuConfig = MENU_CONFIG.find(m => m.id === pageId);
     
-    if (!menuConfig) return false;
+    if (!menuConfig) {
+        console.warn('⚠️ Menu tidak ditemukan:', pageId);
+        return false;
+    }
     
     if (!menuConfig.roles.includes(role)) {
         const roleName = role === 'admin' ? 'Admin' : role === 'operator' ? 'Operator' : 'Member';
