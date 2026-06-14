@@ -22,6 +22,142 @@ let selectedMember = null;
 let scannerInstance = null;
 let settings = { tarif_motor: 1000, tarif_mobil: 3000, diskon: 10, biaya_motor: 30000, biaya_mobil: 90000 };
 let isTopupProcessing = false;
+let editingUsername = null;
+
+// ==========================================
+// KONFIGURASI MENU (Single Source of Truth)
+// ==========================================
+const MENU_CONFIG = [
+    // Menu Utama - Admin & Operator
+    { id: 'dashboard', icon: '📊', label: 'Dashboard', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 1 },
+    { id: 'masuk', icon: '🚪', label: 'Masuk', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 2 },
+    { id: 'scanner', icon: '📷', label: 'Scan', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 3 },
+    { id: 'keluar', icon: '🔑', label: 'Keluar', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 4 },
+    { id: 'parkirAktif', icon: '🚦', label: 'Parkir Aktif', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 5 },
+    
+    // Menu Member Management - Admin Only
+    { id: 'daftarMember', icon: '👤', label: 'Daftar Member', roles: ['admin'], group: 'member', mobilePriority: 6 },
+    { id: 'dataMember', icon: '🗂️', label: 'Data Member', roles: ['admin'], group: 'member', mobilePriority: 7 },
+    { id: 'cetakKartu', icon: '🧾', label: 'Cetak Kartu', roles: ['admin'], group: 'member', mobilePriority: 8 },
+    { id: 'topup', icon: '💰', label: 'Topup Saldo', roles: ['admin'], group: 'member', mobilePriority: 9 },
+    
+    // Menu Laporan - Admin Only
+    { id: 'history', icon: '⏱️', label: 'History', roles: ['admin'], group: 'laporan', mobilePriority: 10 },
+    { id: 'laporan', icon: '📑', label: 'Laporan', roles: ['admin'], group: 'laporan', mobilePriority: 11 },
+    { id: 'setting', icon: '⚙️', label: 'Pengaturan', roles: ['admin'], group: 'laporan', mobilePriority: 12 },
+    { id: 'manageUsers', icon: '👥', label: 'Manage User', roles: ['admin'], group: 'laporan', mobilePriority: 13 },
+    
+    // Menu Member Portal - Member Only
+    { id: 'memberPortal', icon: '🏠', label: 'Portal Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 1 },
+    { id: 'memberKartu', icon: '🎫', label: 'Kartu Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 2 },
+    { id: 'memberRiwayat', icon: '📜', label: 'Riwayat Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 3 },
+];
+
+const PAGE_TITLES = {
+    dashboard: 'Dashboard', masuk: 'Kendaraan Masuk', keluar: 'Kendaraan Keluar',
+    scanner: 'Scan QR', daftarMember: 'Daftar Member', dataMember: 'Data Member',
+    cetakKartu: 'Cetak Kartu', topup: 'Topup Saldo', parkirAktif: 'Parkir Aktif',
+    history: 'History', laporan: 'Laporan', setting: 'Pengaturan', manageUsers: 'Manage User',
+    memberPortal: 'Portal Saya', memberKartu: 'Kartu Saya', memberRiwayat: 'Riwayat Saya'
+};
+
+// ==========================================
+// GENERATE MENU OTOMATIS (Sinkron Desktop & Mobile)
+// ==========================================
+function generateMenus(userRole) {
+    const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
+    generateSidebarMenu(filteredMenus);
+    generateBottomNav(filteredMenus);
+    generateQuickActions(filteredMenus);
+}
+
+function generateSidebarMenu(menus) {
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    if (!sidebarMenu) return;
+    
+    const groups = {
+        utama: { title: 'Utama', items: [] },
+        member: { title: 'Member', items: [] },
+        laporan: { title: 'Laporan', items: [] },
+        memberPortal: { title: 'Portal Member', items: [] }
+    };
+    
+    menus.forEach(menu => {
+        if (groups[menu.group]) groups[menu.group].items.push(menu);
+    });
+    
+    let html = '';
+    Object.keys(groups).forEach(groupKey => {
+        const group = groups[groupKey];
+        if (group.items.length === 0) return;
+        
+        html += `<div class="nav-section-title">${group.title}</div>`;
+        group.items.forEach(menu => {
+            html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this)"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
+        });
+    });
+    
+    sidebarMenu.innerHTML = html;
+}
+
+function generateBottomNav(menus) {
+    const bottomNav = document.getElementById('mobileNav');
+    if (!bottomNav) return;
+    
+    const navMenus = menus
+        .filter(m => m.mobilePriority <= 4)
+        .sort((a, b) => a.mobilePriority - b.mobilePriority)
+        .slice(0, 4);
+    
+    let html = '';
+    navMenus.forEach((menu, index) => {
+        html += `<a class="mobile-nav-item ${index === 0 ? 'active' : ''}" data-page="${menu.id}" onclick="showPage('${menu.id}', this)"><span class="icon">${menu.icon}</span><span>${menu.label}</span></a>`;
+    });
+    
+    html += `<a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon">🚪</span><span>Logout</span></a>`;
+    bottomNav.innerHTML = html;
+}
+
+function generateQuickActions(menus) {
+    const container = document.getElementById('quickActions');
+    if (!container) return;
+    
+    const actions = menus.filter(m => ['masuk', 'keluar', 'scanner', 'daftarMember'].includes(m.id));
+    
+    if (actions.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    const colors = {
+        masuk: 'rgba(59,130,246,0.15)',
+        keluar: 'rgba(239,68,68,0.15)',
+        scanner: 'rgba(6,182,212,0.15)',
+        daftarMember: 'rgba(139,92,246,0.15)'
+    };
+    const textColors = {
+        masuk: 'var(--accent-blue)',
+        keluar: 'var(--danger)',
+        scanner: 'var(--accent-cyan)',
+        daftarMember: 'var(--accent-purple)'
+    };
+    
+    container.innerHTML = actions.map(menu => `
+        <div class="menu-tile" onclick="showPage('${menu.id}')">
+            <div class="tile-icon" style="background:${colors[menu.id]};color:${textColors[menu.id]};">${menu.icon}</div>
+            <div class="tile-label">${menu.label}</div>
+        </div>
+    `).join('');
+}
+
+function setActiveMenu(pageId) {
+    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+}
 
 // ==========================================
 // UTILITIES
@@ -127,21 +263,17 @@ function clearSession() {
 function checkAuth() {
     const session = loadSession();
     if (session) {
-        // Pastikan role terbaca dengan benar
         currentUser = { 
             username: session.username, 
             role: (session.role || 'member').toString().toLowerCase().trim(),
             nama: session.nama || session.username
         };
         
-        console.log(' Auto-login - currentUser:', currentUser);
-        
         applyRoleUI();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').classList.add('active');
         
         initApp();
-        console.log('✅ Auto-login berhasil:', currentUser.username, 'role:', currentUser.role);
         return true;
     }
     return false;
@@ -161,10 +293,9 @@ async function initDefaultUsers() {
                 username: 'operator', 
                 password: hashPassword('op123'), 
                 role: 'operator',
-                nama: 'Operator'
+                nama: 'Operator Utama'
             }
         });
-        console.log('✅ Default users created');
     }
 }
 
@@ -188,31 +319,19 @@ async function doLogin() {
     const snap = await db.ref('users/' + u).once('value');
     const user = snap.val();
     
-    console.log(' Login attempt - username:', u, '| user data:', user);
-    
     if (!user || user.password !== hashPassword(p)) {
         return toast('Username atau password salah', 'error');
     }
     
-    // Pastikan role ada dan valid
-    if (!user.role) {
-        user.role = 'member'; // Default fallback
-        console.log('⚠️ Role tidak ada, default ke member');
-    }
+    if (!user.role) user.role = 'member';
     
-    // Simpan ke currentUser dengan struktur yang jelas
     currentUser = {
         username: user.username || u,
-        password: user.password,
         role: user.role.toString().toLowerCase().trim(),
-        nama: user.nama || user.username || u,
-        createdAt: user.createdAt || new Date().toISOString()
+        nama: user.nama || user.username || u
     };
     
-    console.log('✅ currentUser set:', currentUser);
-    
     saveSession(currentUser);
-    
     applyRoleUI();
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').classList.add('active');
@@ -240,7 +359,6 @@ async function renderUserList() {
     const snap = await db.ref('users').once('value');
     const users = snap.val() || {};
     const list = document.getElementById('userList');
-    
     const userArray = Object.values(users);
     
     if (userArray.length === 0) {
@@ -250,17 +368,15 @@ async function renderUserList() {
     
     list.innerHTML = `
         <div style="margin-top:16px;">
-            <h4 style="margin-bottom:12px;color:var(--text-primary);">Daftar User:</h4>
+            <h4 style="margin-bottom:12px;color:var(--text-primary);">Daftar Petugas & User:</h4>
             ${userArray.map(u => `
                 <div class="list-item" style="padding:12px;">
                     <div class="list-item-info">
-                        <h4>👤 ${u.username}</h4>
-                        <p style="color:${u.role==='admin'?'var(--accent-gold)':u.role==='operator'?'var(--accent-blue)':'var(--success)'};font-weight:bold;">
-                            ${u.role.toUpperCase()}
-                        </p>
+                        <h4>👤 ${u.nama || u.username}</h4>
+                        <p style="color:var(--text-muted);font-size:11px;">@${u.username} • <span style="color:${u.role==='admin'?'var(--accent-gold)':u.role==='operator'?'var(--accent-blue)':'var(--success)'};font-weight:bold;">${u.role.toUpperCase()}</span></p>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <button class="btn btn-sm btn-ghost" onclick="editUser('${u.username}')" title="Edit Password">✏️</button>
+                        <button class="btn btn-sm btn-ghost" onclick="openEditUser('${u.username}')" title="Edit">✏️</button>
                         ${u.username !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.username}')" title="Hapus">🗑️</button>` : ''}
                     </div>
                 </div>
@@ -271,122 +387,104 @@ async function renderUserList() {
 
 async function addUser() {
     const username = sanitize(document.getElementById('newUsername').value);
+    const fullName = sanitize(document.getElementById('newFullName').value);
     const password = document.getElementById('newPassword').value;
     const role = document.getElementById('newRole').value;
     
     if (!username || !password) return toast('Username dan password wajib diisi', 'error');
+    if (!fullName) return toast('Nama lengkap wajib diisi', 'error');
     
     const snap = await db.ref('users/' + username).once('value');
     if (snap.exists()) return toast('Username sudah digunakan', 'error');
     
     await db.ref('users/' + username).set({
         username: username,
+        nama: fullName,
         password: hashPassword(password),
         role: role,
-        nama: username,
         createdAt: new Date().toISOString()
     });
     
-    toast(`✅ User ${username} (${role}) berhasil ditambahkan`, 'success');
+    toast(`✅ User ${fullName} (${role}) berhasil ditambahkan`, 'success');
     document.getElementById('newUsername').value = '';
+    document.getElementById('newFullName').value = '';
     document.getElementById('newPassword').value = '';
     renderUserList();
 }
 
-async function editUser(username) {
-    const newPassword = prompt(`Masukkan password baru untuk user ${username}:`);
-    if (!newPassword) return;
-    
-    await db.ref('users/' + username + '/password').set(hashPassword(newPassword));
-    toast(`✅ Password user ${username} berhasil diubah`, 'success');
-}
-
 async function deleteUser(username) {
     if (!confirm(`Yakin ingin menghapus user ${username}?`)) return;
-    
     await db.ref('users/' + username).remove();
     toast(`✅ User ${username} berhasil dihapus`, 'success');
     renderUserList();
 }
 
+function openEditUser(username) {
+    editingUsername = username;
+    db.ref('users/' + username).once('value').then(snap => {
+        const u = snap.val();
+        document.getElementById('editUsernameDisplay').textContent = username;
+        document.getElementById('editFullName').value = u.nama || username;
+        document.getElementById('editNewPassword').value = '';
+        document.getElementById('editUserModal').classList.add('active');
+    });
+}
+
+function closeEditUserModal() {
+    document.getElementById('editUserModal').classList.remove('active');
+    editingUsername = null;
+}
+
+async function saveEditUser() {
+    if (!editingUsername) return;
+    const fullName = sanitize(document.getElementById('editFullName').value);
+    const newPassword = document.getElementById('editNewPassword').value;
+    
+    if (!fullName) return toast('Nama lengkap tidak boleh kosong', 'error');
+    
+    const updates = { nama: fullName };
+    if (newPassword) {
+        updates.password = hashPassword(newPassword);
+    }
+    
+    await db.ref('users/' + editingUsername).update(updates);
+    toast(`✅ Data ${fullName} berhasil diperbarui`, 'success');
+    closeEditUserModal();
+    renderUserList();
+}
+
 // ==========================================
-// ROLE-BASED UI FILTERING
+// ROLE-BASED UI
 // ==========================================
 function applyRoleUI() {
     if (!currentUser) return;
     
-    // PASTIKAN ROLE VALID
     currentUser.role = (currentUser.role || 'member').toString().toLowerCase().trim();
-    
     const role = currentUser.role;
     const nama = currentUser.nama || currentUser.username;
-    console.log('🎨 applyRoleUI - role:', role, '| nama:', nama);
     
-    // Update topbar
     document.getElementById('userName').textContent = nama;
     document.getElementById('userAvatar').textContent = nama[0].toUpperCase();
     document.getElementById('greetingText').textContent = `${greeting()}, ${nama}!`;
     document.getElementById('todayDate').textContent = formatTanggal(new Date());
     
-    // Role badge
     const roleBadge = document.getElementById('userRoleBadge');
     roleBadge.textContent = role.toUpperCase();
     roleBadge.className = 'role-badge role-' + role;
-    
     document.getElementById('userRole').textContent = role.toUpperCase();
     
-    // Filter sidebar menu
-    const sidebarItems = document.querySelectorAll('#sidebarMenu .nav-item');
-    sidebarItems.forEach(item => {
-        const rolesAttr = item.getAttribute('data-role');
-        if (!rolesAttr) {
-            item.style.display = 'flex';
-            return;
-        }
-        
-        const roles = rolesAttr.split(',').map(r => r.trim());
-        if (roles.includes(role) || roles.includes('all')) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
+    // Generate menu otomatis
+    generateMenus(role);
     
-    // Filter mobile nav
-    const mobileItems = document.querySelectorAll('#mobileNav .mobile-nav-item');
-    mobileItems.forEach(item => {
-        const rolesAttr = item.getAttribute('data-role');
-        if (!rolesAttr) {
-            item.style.display = 'flex';
-            return;
-        }
-        
-        const roles = rolesAttr.split(',').map(r => r.trim());
-        if (roles.includes(role) || roles.includes('all')) {
-            item.style.display = 'flex';
-        } else {
-            item.style.display = 'none';
-        }
-    });
+    let defaultPage = role === 'member' ? 'memberPortal' : 'dashboard';
     
-    // Set default page berdasarkan role
-    let defaultPage = 'dashboard';
-    if (role === 'member') defaultPage = 'memberPortal';
-    
-    // Tampilkan halaman default
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const targetPage = document.getElementById('page-' + defaultPage);
     if (targetPage) targetPage.classList.add('active');
     
-    document.getElementById('pageTitle').textContent = 
-        defaultPage === 'dashboard' ? 'Dashboard' : 
-        defaultPage === 'memberPortal' ? 'Portal Saya' : 'Dashboard';
+    document.getElementById('pageTitle').textContent = PAGE_TITLES[defaultPage] || 'Dashboard';
+    setActiveMenu(defaultPage);
     
-    // Set active state
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.mobile-nav-item').forEach(n => n.classList.remove('active'));
-    
-    // Load data sesuai role
     if (role === 'member') {
         loadMemberPortal();
     } else if (role === 'admin') {
@@ -398,38 +496,21 @@ function applyRoleUI() {
 }
 
 function checkRoleAccess(pageId) {
-    // Debug log untuk troubleshooting
-    console.log(' Check Access - pageId:', pageId, '| currentUser:', currentUser);
+    if (!currentUser) return false;
     
-    if (!currentUser) {
-        console.log(' currentUser is null/undefined');
-        return false;
-    }
-    
-    // Pastikan role terbaca dengan benar (case-insensitive & trim)
     const role = (currentUser.role || '').toString().toLowerCase().trim();
     
-    console.log('📋 Role detected:', role);
-    
-    // Fallback jika role tidak dikenali
     if (!['admin', 'operator', 'member'].includes(role)) {
-        console.log('⚠️ Role tidak dikenali, default ke member');
-        toast('️ Role tidak dikenali, silakan login ulang', 'error');
+        toast('⚠️ Role tidak dikenali, silakan login ulang', 'error');
         setTimeout(() => doLogout(), 2000);
         return false;
     }
     
-    const roleAccess = {
-        'admin': ['dashboard','masuk','keluar','scanner','daftarMember','dataMember','cetakKartu','topup','parkirAktif','history','laporan','setting','manageUsers'],
-        'operator': ['dashboard','masuk','keluar','scanner','parkirAktif'],
-        'member': ['memberPortal','memberKartu','memberRiwayat']
-    };
+    const menuConfig = MENU_CONFIG.find(m => m.id === pageId);
     
-    const allowed = roleAccess[role] || [];
+    if (!menuConfig) return false;
     
-    console.log('✅ Allowed pages:', allowed);
-    
-    if (!allowed.includes(pageId)) {
+    if (!menuConfig.roles.includes(role)) {
         const roleName = role === 'admin' ? 'Admin' : role === 'operator' ? 'Operator' : 'Member';
         toast(`⛔ Akses ditolak! Halaman ini hanya untuk ${roleName}`, 'error');
         
@@ -455,17 +536,8 @@ function showPage(pageId, el) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + pageId).classList.add('active');
     
-    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
-    if (el) el.classList.add('active');
-    
-    const titles = {
-        dashboard:'Dashboard',masuk:'Kendaraan Masuk',keluar:'Kendaraan Keluar',
-        scanner:'Scan QR',daftarMember:'Daftar Member',dataMember:'Data Member',
-        cetakKartu:'Cetak Kartu',topup:'Topup Saldo',parkirAktif:'Parkir Aktif',
-        history:'History',laporan:'Laporan',setting:'Pengaturan',manageUsers:'Manage User',
-        memberPortal:'Portal Saya',memberKartu:'Kartu Saya',memberRiwayat:'Riwayat Saya'
-    };
-    document.getElementById('pageTitle').textContent = titles[pageId] || 'Dashboard';
+    setActiveMenu(pageId);
+    document.getElementById('pageTitle').textContent = PAGE_TITLES[pageId] || 'Dashboard';
     
     if (pageId !== 'scanner' && scannerInstance) {
         try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
@@ -724,7 +796,7 @@ async function prosesMasuk() {
         nik, nama, nomor_kendaraan: plat, jenis_kendaraan: jenis,
         waktu_masuk: now, kode_tiket: kode,
         is_member: !!selectedMember, nomor_member: selectedMember?.nomor_member || '',
-        operator_masuk: currentUser.username
+        operator_masuk: currentUser.nama || currentUser.username
     };
     
     await db.ref('parkir_aktif').push(data);
@@ -815,7 +887,7 @@ async function doKeluar(kode) {
         tarif_per_jam: tarifAkhir, 
         diskon_persen: diskonPersen,
         total_biaya: biaya, 
-        operator_keluar: currentUser.username,
+        operator_keluar: currentUser.nama || currentUser.username,
         saldo_akhir: saldoAkhir
     };
     await db.ref('history').push(historyData);
@@ -847,7 +919,8 @@ async function doKeluar(kode) {
         ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
         <div style="margin-top:16px;padding:12px;background:#f9f9f9;border-radius:8px;font-size:11px;color:#666;">
             <strong>Keterangan:</strong><br>
-            ${jam} jam × ${formatRupiah(tarifAkhir)} = ${formatRupiah(biaya)}
+            ${jam} jam × ${formatRupiah(tarifAkhir)} = ${formatRupiah(biaya)}<br>
+            Petugas: ${currentUser.nama || currentUser.username}
         </div>
         <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
             Terima kasih 🙏<br>
@@ -913,7 +986,7 @@ function startScanner() {
                 document.getElementById('inPlat').value = m.nomor_kendaraan;
                 document.getElementById('inJenis').value = m.jenis_kendaraan;
                 selectedMember = m;
-                showPage('masuk', document.querySelector('[onclick*="masuk"]'));
+                showPage('masuk', document.querySelector('[data-page="masuk"]'));
                 toast('Member terdeteksi! Silakan proses masuk', 'success');
             } else {
                 await doKeluar(text.toUpperCase());
@@ -939,7 +1012,7 @@ async function prosesScanManual() {
         document.getElementById('inPlat').value = m.nomor_kendaraan;
         document.getElementById('inJenis').value = m.jenis_kendaraan;
         selectedMember = m;
-        showPage('masuk', document.querySelector('[onclick*="masuk"]'));
+        showPage('masuk', document.querySelector('[data-page="masuk"]'));
         toast('Member terdeteksi!', 'success');
     } else {
         await doKeluar(val);
@@ -983,7 +1056,6 @@ async function daftarMember() {
     
     await db.ref('members').push(data);
     
-    // Auto-create user untuk member
     await db.ref('users/' + nik).set({
         username: nik,
         password: hashPassword(nik),
@@ -1003,7 +1075,7 @@ async function daftarMember() {
             <p><strong>Biaya Daftar:</strong> ${formatRupiah(biaya)}</p>
             <p style="color:var(--success);"><strong>Saldo Awal:</strong> ${formatRupiah(biaya)}</p>
             <hr style="border-color:var(--border);margin:12px 0;">
-            <p style="color:var(--accent-gold);font-weight:bold;"> Info Login Member:</p>
+            <p style="color:var(--accent-gold);font-weight:bold;">🔑 Info Login Member:</p>
             <p>Username: <strong>${nik}</strong></p>
             <p>Password: <strong>${nik}</strong></p>
             <p style="color:var(--text-secondary);font-size:11px;margin-top:8px;">Sarankan member mengganti password setelah login pertama</p>
@@ -1029,7 +1101,7 @@ async function renderMembers() {
     
     const totalSaldo = filtered.reduce((a,b) => a + (b.saldo||0), 0);
     document.getElementById('memberStats').innerHTML = 
-        ` Total <strong>${filtered.length}</strong> member | 💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>`;
+        `📊 Total <strong>${filtered.length}</strong> member | 💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>`;
     
     const list = document.getElementById('memberList');
     if (filtered.length === 0) {
@@ -1088,7 +1160,7 @@ async function hapusMember(nik, nama) {
         toast(`✅ Member ${nama} berhasil dihapus!`, 'success');
         renderMembers();
     } catch (err) {
-        toast(' Gagal hapus: ' + err.message, 'error');
+        toast('❌ Gagal hapus: ' + err.message, 'error');
     }
 }
 
@@ -1136,7 +1208,7 @@ async function renderCetak() {
         <div class="card" style="margin-bottom:16px;">
             <div class="member-card-preview print-area">
                 <div class="card-header">
-                    <h3>️ PARKIR PREMIUM</h3>
+                    <h3>🅿️ PARKIR PREMIUM</h3>
                     <span>MEMBER CARD</span>
                 </div>
                 <div class="card-body">
@@ -1154,7 +1226,7 @@ async function renderCetak() {
             </div>
             <div style="display:flex;gap:8px;margin-top:12px;">
                 <button class="btn btn-purple btn-sm" onclick="cetakKartu(${i},'${m.nomor_member}','${m.nama}','${m.nik}','${m.nomor_kendaraan}','${m.jenis_kendaraan}',${m.saldo||0},'${m.tgl_berlaku||''}')">🖨️ Cetak</button>
-                <button class="btn btn-ghost btn-sm" onclick="showDetailMember('${m.nik}')">️ Detail</button>
+                <button class="btn btn-ghost btn-sm" onclick="showDetailMember('${m.nik}')">👁️ Detail</button>
             </div>
         </div>
     `).join('');
@@ -1290,7 +1362,7 @@ async function renderParkirAktif() {
     
     list.innerHTML = `<p style="color:var(--accent-teal);font-size:12px;margin-bottom:12px;">Total: <strong>${data.length}</strong> kendaraan</p>` +
         data.map(d => {
-            const tag = d.is_member ? '<span class="badge badge-member">️ MEMBER</span>' : '<span class="badge badge-reguler">👤 REGULER</span>';
+            const tag = d.is_member ? '<span class="badge badge-member">🎖️ MEMBER</span>' : '<span class="badge badge-reguler">👤 REGULER</span>';
             return `<div class="list-item">
                 <div class="list-item-info">
                     <h4>${d.nama} ${tag}</h4>
@@ -1313,7 +1385,7 @@ async function renderHistory() {
     const total = data.reduce((a,b) => a + (b.total_biaya||0), 0);
     const nMember = data.filter(h => h.is_member).length;
     document.getElementById('historyStats').innerHTML = 
-        ` <strong>${data.length}</strong> transaksi | 💰 Total <strong>${formatRupiah(total)}</strong> | 🎖️ Member ${nMember} | 👤 Reguler ${data.length-nMember}`;
+        `📊 <strong>${data.length}</strong> transaksi | 💰 Total <strong>${formatRupiah(total)}</strong> | 🎖️ Member ${nMember} | 👤 Reguler ${data.length-nMember}`;
     
     const list = document.getElementById('historyList');
     if (data.length === 0) {
@@ -1325,9 +1397,12 @@ async function renderHistory() {
         const col = h.is_member ? 'var(--success)' : 'var(--accent-gold)';
         return `<div class="list-item">
             <div class="list-item-info">
-                <h4 style="color:${col};">${h.is_member?'🎖️':''} ${h.nama}</h4>
+                <h4 style="color:${col};">${h.is_member?'🎖️':'👤'} ${h.nama}</h4>
                 <p>${h.nomor_kendaraan} | ${h.jenis_kendaraan.toUpperCase()} | ${h.lama_jam} jam</p>
                 <p style="font-size:11px;color:var(--text-muted);">Masuk ${h.waktu_masuk.substring(5,16)} → Keluar ${h.waktu_keluar.substring(11,16)}</p>
+                <p style="font-size:11px;color:var(--accent-teal);">👮 Petugas: ${h.operator_keluar || '-'}</p>
+            </div>
+            <div style="text-align:right;">
                 <p style="color:${col};font-weight:bold;font-size:14px;">${formatRupiah(h.total_biaya)}</p>
             </div>
         </div>`;
@@ -1356,7 +1431,7 @@ async function renderLaporan() {
     document.getElementById('laporanStats').innerHTML = `
         <p style="margin-bottom:8px;">📊 <strong>${data.length}</strong> kendaraan</p>
         <p style="margin-bottom:8px;">🏍️ Motor ${motor} | 🚙 Mobil ${mobil}</p>
-        <p style="margin-bottom:8px;">️ Member ${member} | 👤 Reguler ${data.length-member}</p>
+        <p style="margin-bottom:8px;">🎖️ Member ${member} | 👤 Reguler ${data.length-member}</p>
         <p style="color:var(--accent-gold);font-weight:bold;font-size:16px;">💰 Pendapatan: ${formatRupiah(total)}</p>
     `;
     
@@ -1377,7 +1452,7 @@ async function exportLaporanCSV() {
     const data = snap.val() ? Object.values(snap.val()) : [];
     if (data.length === 0) return toast('Tidak ada data','error');
     
-    let csv = 'No,NIK,Nama,Nopol,Jenis,Masuk,Keluar,Jam,Tarif,Diskon%,Total,Member,Op Masuk,Op Keluar\n';
+    let csv = 'No,NIK,Nama,Nopol,Jenis,Masuk,Keluar,Jam,Tarif,Diskon%,Total,Member,Petugas Masuk,Petugas Keluar\n';
     data.forEach((h,i) => {
         csv += `${i+1},"${h.nik}","${h.nama}","${h.nomor_kendaraan}","${h.jenis_kendaraan}","${h.waktu_masuk}","${h.waktu_keluar}",${h.lama_jam},${h.tarif_per_jam},${h.diskon_persen||0},${h.total_biaya},"${h.is_member?'Ya':'Tidak'}","${h.operator_masuk||''}","${h.operator_keluar||''}"\n`;
     });
@@ -1455,4 +1530,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 document.getElementById('modal').addEventListener('click', e => {
     if (e.target.id === 'modal') closeModal();
+});
+
+document.getElementById('editUserModal').addEventListener('click', e => {
+    if (e.target.id === 'editUserModal') closeEditUserModal();
 });
