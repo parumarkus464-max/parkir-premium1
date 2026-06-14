@@ -178,156 +178,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 .btn-logout:hover{background:var(--danger);color:white;transform:scale(1.1);}
 .btn-logout:active{transform:scale(0.95);}
 
-.mobile-bottom-nav{display:none;}
-
 /* ==========================================
-   MOBILE OPTIMIZATION
-   ========================================== */
-@media (max-width: 768px) {
-    .sidebar { display: none !important; }
-    .main { margin-left: 0 !important; padding-bottom: 90px !important; }
-    .content { padding: 12px !important; }
-    .menu-toggle { display: block !important; }
-    .topbar { padding: 0 12px !important; }
-    
-    .app.active ~ .mobile-bottom-nav { display: flex !important; }
-    
-    .mobile-bottom-nav {
-        position: fixed; bottom: 0; left: 0; right: 0;
-        background: rgba(10, 14, 26, 0.98);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-top: 1px solid var(--border);
-        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-        z-index: 1000; justify-content: space-around;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
-    }
-    
-    .mobile-nav-item {
-        display: flex; flex-direction: column; align-items: center;
-        color: var(--text-muted); font-size: 10px; font-weight: 600;
-        text-decoration: none; padding: 4px 8px;
-        transition: all 0.2s ease;
-        -webkit-tap-highlight-color: transparent;
-        cursor: pointer; min-width: 0; flex: 1;
-    }
-    
-    .mobile-nav-item .icon { font-size: 22px; margin-bottom: 3px; }
-    .mobile-nav-item:active .icon { transform: scale(0.9); }
-    .mobile-nav-item.active { color: var(--accent-teal); }
-    .mobile-nav-item.active .icon { filter: drop-shadow(0 0 8px rgba(0, 229, 160, 0.6)); }
-
-    .login-container { grid-template-columns: 1fr !important; border-radius: 0 !important; height: 100vh !important; }
-    .login-left { display: none !important; }
-    .login-right { padding: 30px 20px !important; }
-    .login-right h2 { font-size: 20px !important; }
-
-    .form-grid { grid-template-columns: 1fr !important; }
-    
-    .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .stat-card { padding: 12px 10px !important; min-height: 100px !important; }
-    .stat-card .stat-value { font-size: 18px !important; }
-    .stat-card .stat-label { font-size: 9px !important; }
-    .stat-card .stat-icon { font-size: 22px !important; margin-bottom: 6px !important; }
-    .stat-card .stat-trend { font-size: 9px !important; }
-    .stat-card:nth-child(1) { order: 1; }
-    .stat-card:nth-child(2) { order: 2; }
-    .stat-card:nth-child(3) { order: 3; }
-    .stat-card:nth-child(4) { order: 4; }
-
-    .menu-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-    .menu-tile { padding: 16px 10px !important; }
-    .menu-tile .tile-icon { width: 48px !important; height: 48px !important; font-size: 22px !important; }
-    .menu-tile .tile-label { font-size: 11px !important; }
-
-    .input-wrap { min-height: 48px !important; }
-    .input-wrap input, .input-wrap select { padding: 14px 12px !important; font-size: 16px !important; }
-    .form-group label { font-size: 12px !important; margin-bottom: 6px !important; }
-
-    .btn { padding: 14px 16px !important; font-size: 14px !important; border-radius: 12px !important; font-weight: 700 !important; min-height: 48px !important; }
-    .btn-sm { padding: 10px 12px !important; font-size: 12px !important; }
-
-    .card { padding: 16px !important; margin-bottom: 12px !important; border-radius: 14px !important; }
-    .card-title { font-size: 14px !important; margin-bottom: 12px !important; }
-
-    .scanner-box { max-width: 100% !important; border-radius: 14px !important; }
-
-    .list-item { padding: 14px !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
-    .list-item .btn { width: 100% !important; margin-top: 8px !important; }
-
-    .modal { margin: 16px !important; max-height: 85vh !important; padding: 20px !important; border-radius: 16px !important; width: calc(100% - 32px) !important; }
-    .modal-header h3 { font-size: 16px !important; }
-
-    .btn-logout { width: 36px !important; height: 36px !important; font-size: 16px !important; }
-    .user-badge span { display: none !important; }
-    .user-badge { padding: 4px 8px !important; }
-    .clock { font-size: 11px !important; }
-    .topbar-left h2 { font-size: 16px !important; }
-
-    .welcome-banner { padding: 16px !important; margin-bottom: 16px !important; }
-    .welcome-banner h2 { font-size: 18px !important; }
-    .welcome-banner p { font-size: 12px !important; }
-    .welcome-info { font-size: 11px !important; }
-
-    .member-card-preview { max-width: 100% !important; padding: 16px !important; }
-    .member-card-preview .member-info h4 { font-size: 16px !important; }
-
-    .badge { font-size: 9px !important; padding: 3px 8px !important; }
-
-    .toast { max-width: calc(100% - 32px) !important; left: 16px !important; right: 16px !important; top: 16px !important; }
-
-    @supports (padding-top: env(safe-area-inset-top)) {
-        .login-screen { padding-top: env(safe-area-inset-top) !important; }
-    }
-}
-
-@media (max-width: 480px) {
-    .content { padding: 10px !important; }
-    .stats-grid { gap: 8px !important; }
-    .stat-card { padding: 10px 8px !important; min-height: 90px !important; }
-    .stat-card .stat-value { font-size: 16px !important; }
-    .stat-card .stat-label { font-size: 8px !important; }
-    .stat-card .stat-icon { font-size: 20px !important; }
-    .stat-card .stat-trend { font-size: 8px !important; }
-    .menu-grid { gap: 8px !important; }
-    .menu-tile { padding: 14px 8px !important; }
-    .menu-tile .tile-icon { width: 44px !important; height: 44px !important; font-size: 20px !important; }
-    .menu-tile .tile-label { font-size: 10px !important; }
-    .welcome-banner { padding: 14px !important; }
-    .welcome-banner h2 { font-size: 16px !important; }
-    .card { padding: 14px !important; }
-    .card-title { font-size: 13px !important; }
-    .btn { padding: 12px 14px !important; font-size: 13px !important; }
-    .input-wrap input, .input-wrap select { font-size: 15px !important; padding: 12px 10px !important; }
-    .mobile-nav-item { font-size: 9px !important; padding: 3px 6px !important; }
-    .mobile-nav-item .icon { font-size: 20px !important; }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .sidebar { width: 200px !important; }
-    .main { margin-left: 200px !important; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    .content { padding: 20px !important; }
-}
-
-@media (max-width: 768px) and (orientation: landscape) {
-    .login-container { grid-template-columns: 1fr 1fr !important; }
-    .login-left { display: flex !important; padding: 30px !important; }
-    .login-logo { width: 80px !important; height: 80px !important; }
-    .login-left h1 { font-size: 22px !important; }
-    .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
-    .stat-card { min-height: 80px !important; padding: 10px !important; }
-    .stat-card .stat-value { font-size: 16px !important; }
-}
-
-@media print {
-    body * { visibility: hidden; }
-    .print-area, .print-area * { visibility: visible; }
-    .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-    .mobile-bottom-nav, .sidebar, .topbar, .btn-logout { display: none !important; }
-}
-    /* ==========================================
    MENU DRAWER untuk Mobile
    ========================================== */
 .menu-drawer-overlay {
@@ -390,36 +241,152 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     color: var(--text-primary);
 }
 
-/* Di mobile, sidebar desktop tetap hidden */
+/* ==========================================
+   RESPONSIVE - MOBILE & TABLET
+   ========================================== */
 @media (max-width: 768px) {
-    .sidebar {
-        display: none !important;
-    }
+    /* Sidebar laptop disembunyikan */
+    .sidebar { display: none !important; }
     
-    .main {
-        margin-left: 0 !important;
-        padding-bottom: 20px !important;
-    }
+    /* Main content full width */
+    .main { margin-left: 0 !important; padding-bottom: 20px !important; }
+    .content { padding: 12px !important; }
     
-    .content {
-        padding: 12px !important;
-    }
+    /* Tampilkan tombol menu (☰) */
+    .menu-toggle { display: block !important; }
+    .topbar { padding: 0 12px !important; }
     
-    .menu-toggle {
-        display: block !important;
-    }
+    /* Login screen full height */
+    .login-container { grid-template-columns: 1fr !important; border-radius: 0 !important; height: 100vh !important; }
+    .login-left { display: none !important; }
+    .login-right { padding: 30px 20px !important; }
+    .login-right h2 { font-size: 20px !important; }
+
+    /* Form 1 kolom */
+    .form-grid { grid-template-columns: 1fr !important; }
     
-    .topbar {
-        padding: 0 12px !important;
+    /* Stats 2 kolom */
+    .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .stat-card { padding: 12px 10px !important; min-height: 100px !important; }
+    .stat-card .stat-value { font-size: 18px !important; }
+    .stat-card .stat-label { font-size: 9px !important; }
+    .stat-card .stat-icon { font-size: 22px !important; margin-bottom: 6px !important; }
+    .stat-card .stat-trend { font-size: 9px !important; }
+    .stat-card:nth-child(1) { order: 1; }
+    .stat-card:nth-child(2) { order: 2; }
+    .stat-card:nth-child(3) { order: 3; }
+    .stat-card:nth-child(4) { order: 4; }
+
+    /* Menu grid 2 kolom */
+    .menu-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .menu-tile { padding: 16px 10px !important; }
+    .menu-tile .tile-icon { width: 48px !important; height: 48px !important; font-size: 22px !important; }
+    .menu-tile .tile-label { font-size: 11px !important; }
+
+    /* Input fields */
+    .input-wrap { min-height: 48px !important; }
+    .input-wrap input, .input-wrap select { padding: 14px 12px !important; font-size: 16px !important; }
+    .form-group label { font-size: 12px !important; margin-bottom: 6px !important; }
+
+    /* Buttons */
+    .btn { padding: 14px 16px !important; font-size: 14px !important; border-radius: 12px !important; font-weight: 700 !important; min-height: 48px !important; }
+    .btn-sm { padding: 10px 12px !important; font-size: 12px !important; }
+
+    /* Cards */
+    .card { padding: 16px !important; margin-bottom: 12px !important; border-radius: 14px !important; }
+    .card-title { font-size: 14px !important; margin-bottom: 12px !important; }
+
+    /* Scanner */
+    .scanner-box { max-width: 100% !important; border-radius: 14px !important; }
+
+    /* List items */
+    .list-item { padding: 14px !important; flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+    .list-item .btn { width: 100% !important; margin-top: 8px !important; }
+
+    /* Modal */
+    .modal { margin: 16px !important; max-height: 85vh !important; padding: 20px !important; border-radius: 16px !important; width: calc(100% - 32px) !important; }
+    .modal-header h3 { font-size: 16px !important; }
+
+    /* Topbar */
+    .btn-logout { width: 36px !important; height: 36px !important; font-size: 16px !important; }
+    .user-badge span { display: none !important; }
+    .user-badge { padding: 4px 8px !important; }
+    .clock { font-size: 11px !important; }
+    .topbar-left h2 { font-size: 16px !important; }
+
+    /* Welcome banner */
+    .welcome-banner { padding: 16px !important; margin-bottom: 16px !important; }
+    .welcome-banner h2 { font-size: 18px !important; }
+    .welcome-banner p { font-size: 12px !important; }
+    .welcome-info { font-size: 11px !important; }
+
+    /* Member card */
+    .member-card-preview { max-width: 100% !important; padding: 16px !important; }
+    .member-card-preview .member-info h4 { font-size: 16px !important; }
+
+    /* Badge */
+    .badge { font-size: 9px !important; padding: 3px 8px !important; }
+
+    /* Toast */
+    .toast { max-width: calc(100% - 32px) !important; left: 16px !important; right: 16px !important; top: 16px !important; }
+
+    /* iOS safe area */
+    @supports (padding-top: env(safe-area-inset-top)) {
+        .login-screen { padding-top: env(safe-area-inset-top) !important; }
     }
 }
 
+@media (max-width: 480px) {
+    .content { padding: 10px !important; }
+    .stats-grid { gap: 8px !important; }
+    .stat-card { padding: 10px 8px !important; min-height: 90px !important; }
+    .stat-card .stat-value { font-size: 16px !important; }
+    .stat-card .stat-label { font-size: 8px !important; }
+    .stat-card .stat-icon { font-size: 20px !important; }
+    .stat-card .stat-trend { font-size: 8px !important; }
+    .menu-grid { gap: 8px !important; }
+    .menu-tile { padding: 14px 8px !important; }
+    .menu-tile .tile-icon { width: 44px !important; height: 44px !important; font-size: 20px !important; }
+    .menu-tile .tile-label { font-size: 10px !important; }
+    .welcome-banner { padding: 14px !important; }
+    .welcome-banner h2 { font-size: 16px !important; }
+    .card { padding: 14px !important; }
+    .card-title { font-size: 13px !important; }
+    .btn { padding: 12px 14px !important; font-size: 13px !important; }
+    .input-wrap input, .input-wrap select { font-size: 15px !important; padding: 12px 10px !important; }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar { width: 200px !important; }
+    .main { margin-left: 200px !important; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .content { padding: 20px !important; }
+    
+    /* Di tablet, menu drawer hidden */
+    .menu-drawer-overlay, .menu-drawer { display: none !important; }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+    .login-container { grid-template-columns: 1fr 1fr !important; }
+    .login-left { display: flex !important; padding: 30px !important; }
+    .login-logo { width: 80px !important; height: 80px !important; }
+    .login-left h1 { font-size: 22px !important; }
+    .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .stat-card { min-height: 80px !important; padding: 10px !important; }
+    .stat-card .stat-value { font-size: 16px !important; }
+}
+
 /* Di laptop, menu drawer hidden */
-@media (min-width: 769px) {
-    .menu-drawer-overlay,
-    .menu-drawer {
-        display: none !important;
-    }
+@media (min-width: 1025px) {
+    .menu-drawer-overlay, .menu-drawer { display: none !important; }
+}
+
+@media print {
+    body * { visibility: hidden; }
+    .print-area, .print-area * { visibility: visible; }
+    .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    .menu-drawer-overlay, .menu-drawer, .sidebar, .topbar, .btn-logout { display: none !important; }
 }
 </style>
 </head>
@@ -472,7 +439,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
 
 <!-- MAIN APP -->
 <div class="app" id="mainApp">
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR (untuk Laptop) -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -485,10 +452,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 </div>
             </div>
         </div>
-        
-        <!-- Menu Sidebar akan di-generate otomatis oleh JavaScript -->
         <div class="nav-section" id="sidebarMenu"></div>
-        
         <div class="nav-section">
             <div class="nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon">🚪</span>Logout</div>
         </div>
@@ -567,24 +531,15 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
                         <div class="form-group">
                             <label>Username</label>
-                            <div class="input-wrap">
-                                <span class="icon">👤</span>
-                                <input type="text" id="newUsername" placeholder="Username (tanpa spasi)">
-                            </div>
+                            <div class="input-wrap"><span class="icon">👤</span><input type="text" id="newUsername" placeholder="Username (tanpa spasi)"></div>
                         </div>
                         <div class="form-group">
                             <label>Nama Lengkap</label>
-                            <div class="input-wrap">
-                                <span class="icon">📝</span>
-                                <input type="text" id="newFullName" placeholder="Nama Lengkap">
-                            </div>
+                            <div class="input-wrap"><span class="icon">📝</span><input type="text" id="newFullName" placeholder="Nama Lengkap"></div>
                         </div>
                         <div class="form-group">
                             <label>Password</label>
-                            <div class="input-wrap">
-                                <span class="icon">🔒</span>
-                                <input type="password" id="newPassword" placeholder="Password">
-                            </div>
+                            <div class="input-wrap"><span class="icon">🔒</span><input type="password" id="newPassword" placeholder="Password"></div>
                         </div>
                         <div class="form-group">
                             <label>Role / Jabatan</label>
@@ -612,7 +567,6 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                         <span>📅 Berlaku: <span id="mpBerlaku">-</span></span>
                     </div>
                 </div>
-
                 <div class="stats-grid">
                     <div class="stat-card teal">
                         <div class="stat-icon">💰</div>
@@ -627,26 +581,16 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                         <div class="stat-trend">Member</div>
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-title"><span class="icon">🚗</span>Info Kendaraan</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div>
-                            <p style="color:var(--text-muted);font-size:11px;">Nomor Polisi</p>
-                            <p style="font-size:16px;font-weight:bold;" id="mpPlat">-</p>
-                        </div>
-                        <div>
-                            <p style="color:var(--text-muted);font-size:11px;">Jenis</p>
-                            <p style="font-size:16px;font-weight:bold;" id="mpJenis">-</p>
-                        </div>
+                        <div><p style="color:var(--text-muted);font-size:11px;">Nomor Polisi</p><p style="font-size:16px;font-weight:bold;" id="mpPlat">-</p></div>
+                        <div><p style="color:var(--text-muted);font-size:11px;">Jenis</p><p style="font-size:16px;font-weight:bold;" id="mpJenis">-</p></div>
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-title"><span class="icon">📊</span>Ringkasan Bulan Ini</div>
-                    <div id="mpRingkasan" style="padding:10px;">
-                        <p style="color:var(--text-muted);text-align:center;">Memuat...</p>
-                    </div>
+                    <div id="mpRingkasan" style="padding:10px;"><p style="color:var(--text-muted);text-align:center;">Memuat...</p></div>
                 </div>
             </div>
 
@@ -663,9 +607,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="page" id="page-memberRiwayat">
                 <div class="card">
                     <div class="card-title"><span class="icon">📜</span>Riwayat Parkir Saya</div>
-                    <div id="memberRiwayatList">
-                        <p style="color:var(--text-muted);text-align:center;">Memuat data...</p>
-                    </div>
+                    <div id="memberRiwayatList"><p style="color:var(--text-muted);text-align:center;">Memuat data...</p></div>
                 </div>
             </div>
 
@@ -674,32 +616,11 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 <div class="card">
                     <div class="card-title"><span class="icon">🚪</span>Data Kendaraan Masuk</div>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>🆔 NIK / Scan QR Member</label>
-                            <div class="input-wrap"><input type="text" id="inNik" placeholder="NIK atau scan QR"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>📞 No. Telepon</label>
-                            <div class="input-wrap"><input type="text" id="inTelp" placeholder="08xxx"></div>
-                        </div>
-                        <div class="form-group full">
-                            <label>👤 Nama Lengkap</label>
-                            <div class="input-wrap"><input type="text" id="inNama" placeholder="Nama lengkap"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>🚗 Nomor Polisi</label>
-                            <div class="input-wrap"><input type="text" id="inPlat" placeholder="B 1234 CD" style="text-transform:uppercase;"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>🏍️ Jenis Kendaraan</label>
-                            <div class="input-wrap">
-                                <select id="inJenis">
-                                    <option value="">Pilih Jenis</option>
-                                    <option value="motor">Motor</option>
-                                    <option value="mobil">Mobil</option>
-                                </select>
-                            </div>
-                        </div>
+                        <div class="form-group"><label>🆔 NIK / Scan QR Member</label><div class="input-wrap"><input type="text" id="inNik" placeholder="NIK atau scan QR"></div></div>
+                        <div class="form-group"><label>📞 No. Telepon</label><div class="input-wrap"><input type="text" id="inTelp" placeholder="08xxx"></div></div>
+                        <div class="form-group full"><label>👤 Nama Lengkap</label><div class="input-wrap"><input type="text" id="inNama" placeholder="Nama lengkap"></div></div>
+                        <div class="form-group"><label>🚗 Nomor Polisi</label><div class="input-wrap"><input type="text" id="inPlat" placeholder="B 1234 CD" style="text-transform:uppercase;"></div></div>
+                        <div class="form-group"><label>🏍️ Jenis Kendaraan</label><div class="input-wrap"><select id="inJenis"><option value="">Pilih Jenis</option><option value="motor">Motor</option><option value="mobil">Mobil</option></select></div></div>
                     </div>
                     <button class="btn btn-ghost" style="margin:12px 0;" onclick="cekMemberMasuk()">🔍 Cek Member (NIK)</button>
                     <div id="inInfo" style="padding:12px;border-radius:10px;margin-bottom:12px;display:none;"></div>
@@ -711,10 +632,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="page" id="page-keluar">
                 <div class="card">
                     <div class="card-title"><span class="icon">🔑</span>Kendaraan Keluar</div>
-                    <div class="form-group">
-                        <label>🎫 Kode Tiket</label>
-                        <div class="input-wrap"><input type="text" id="outKode" placeholder="Masukkan kode tiket" style="text-transform:uppercase;"></div>
-                    </div>
+                    <div class="form-group"><label>🎫 Kode Tiket</label><div class="input-wrap"><input type="text" id="outKode" placeholder="Masukkan kode tiket" style="text-transform:uppercase;"></div></div>
                     <button class="btn btn-danger" onclick="prosesKeluar()">🔑 Proses Keluar & Bayar</button>
                     <p style="margin-top:12px;color:var(--text-secondary);font-size:12px;">💡 Gunakan Scan QR untuk keluar lebih cepat</p>
                 </div>
@@ -739,41 +657,17 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                 <div class="card">
                     <div class="card-title"><span class="icon">👤</span>Data Pribadi</div>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>🆔 NIK / KTP</label>
-                            <div class="input-wrap"><input type="text" id="dmNik" placeholder="10-20 digit"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>📞 No. Telepon</label>
-                            <div class="input-wrap"><input type="text" id="dmTelp" placeholder="08xxx"></div>
-                        </div>
-                        <div class="form-group full">
-                            <label>👤 Nama Lengkap</label>
-                            <div class="input-wrap"><input type="text" id="dmNama" placeholder="Nama sesuai KTP"></div>
-                        </div>
-                        <div class="form-group full">
-                            <label>🏠 Alamat</label>
-                            <div class="input-wrap"><input type="text" id="dmAlamat" placeholder="Alamat lengkap"></div>
-                        </div>
+                        <div class="form-group"><label>🆔 NIK / KTP</label><div class="input-wrap"><input type="text" id="dmNik" placeholder="10-20 digit"></div></div>
+                        <div class="form-group"><label>📞 No. Telepon</label><div class="input-wrap"><input type="text" id="dmTelp" placeholder="08xxx"></div></div>
+                        <div class="form-group full"><label>👤 Nama Lengkap</label><div class="input-wrap"><input type="text" id="dmNama" placeholder="Nama sesuai KTP"></div></div>
+                        <div class="form-group full"><label>🏠 Alamat</label><div class="input-wrap"><input type="text" id="dmAlamat" placeholder="Alamat lengkap"></div></div>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-title" style="color:var(--accent-blue);"><span class="icon">🚗</span>Data Kendaraan</div>
                     <div class="form-grid">
-                        <div class="form-group">
-                            <label>🚗 Nomor Polisi</label>
-                            <div class="input-wrap"><input type="text" id="dmPlat" placeholder="B 1234 CD" style="text-transform:uppercase;"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>🏍️ Jenis Kendaraan</label>
-                            <div class="input-wrap">
-                                <select id="dmJenis">
-                                    <option value="">Pilih Jenis</option>
-                                    <option value="motor">Motor</option>
-                                    <option value="mobil">Mobil</option>
-                                </select>
-                            </div>
-                        </div>
+                        <div class="form-group"><label>🚗 Nomor Polisi</label><div class="input-wrap"><input type="text" id="dmPlat" placeholder="B 1234 CD" style="text-transform:uppercase;"></div></div>
+                        <div class="form-group"><label>🏍️ Jenis Kendaraan</label><div class="input-wrap"><select id="dmJenis"><option value="">Pilih Jenis</option><option value="motor">Motor</option><option value="mobil">Mobil</option></select></div></div>
                     </div>
                 </div>
                 <div class="card">
@@ -794,9 +688,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
                         <div class="card-title" style="margin:0;"><span class="icon">🗂️</span>Data Member</div>
                         <button class="btn btn-sm btn-ghost" onclick="exportMemberCSV()">📊 Export CSV</button>
                     </div>
-                    <div class="form-group">
-                        <div class="input-wrap"><span class="icon">🔍</span><input type="text" id="searchMember" placeholder="Cari NIK / Nama / No Member" oninput="renderMembers()"></div>
-                    </div>
+                    <div class="form-group"><div class="input-wrap"><span class="icon">🔍</span><input type="text" id="searchMember" placeholder="Cari NIK / Nama / No Member" oninput="renderMembers()"></div></div>
                     <div id="memberStats" style="padding:10px;background:rgba(0,229,160,0.08);border-radius:10px;margin-bottom:12px;font-size:12px;color:var(--accent-teal);"></div>
                     <div id="memberList"></div>
                 </div>
@@ -806,9 +698,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="page" id="page-cetakKartu">
                 <div class="card">
                     <div class="card-title"><span class="icon">🧾</span>Cetak Kartu Member</div>
-                    <div class="form-group">
-                        <div class="input-wrap"><span class="icon">🔍</span><input type="text" id="searchCetak" placeholder="Cari NIK / Nama / No Member" oninput="renderCetak()"></div>
-                    </div>
+                    <div class="form-group"><div class="input-wrap"><span class="icon">🔍</span><input type="text" id="searchCetak" placeholder="Cari NIK / Nama / No Member" oninput="renderCetak()"></div></div>
                     <div id="cetakList"></div>
                 </div>
             </div>
@@ -817,10 +707,7 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="page" id="page-topup">
                 <div class="card">
                     <div class="card-title"><span class="icon">💰</span>Topup Saldo Member</div>
-                    <div class="form-group">
-                        <label>🔍 Cari Member</label>
-                        <div class="input-wrap"><input type="text" id="topupSearch" placeholder="NIK atau Nomor Member"></div>
-                    </div>
+                    <div class="form-group"><label>🔍 Cari Member</label><div class="input-wrap"><input type="text" id="topupSearch" placeholder="NIK atau Nomor Member"></div></div>
                     <button class="btn btn-ghost" onclick="cariMemberTopup()">🔍 Cari</button>
                     <div id="topupInfo" style="margin-top:16px;display:none;"></div>
                 </div>
@@ -878,53 +765,46 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
             <div class="page" id="page-setting">
                 <div class="card">
                     <div class="card-title"><span class="icon">⚙️</span>Tarif & Diskon</div>
-                    <div class="form-group">
-                        <label>🏍️ Tarif Motor / jam</label>
-                        <div class="input-wrap"><input type="number" id="setMotor" placeholder="1000"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>🚙 Tarif Mobil / jam</label>
-                        <div class="input-wrap"><input type="number" id="setMobil" placeholder="3000"></div>
-                    </div>
-                    <div class="form-group">
-                        <label>🎁 Diskon Member (%)</label>
-                        <div class="input-wrap"><input type="number" id="setDiskon" placeholder="10" min="0" max="100"></div>
-                    </div>
+                    <div class="form-group"><label>🏍️ Tarif Motor / jam</label><div class="input-wrap"><input type="number" id="setMotor" placeholder="1000"></div></div>
+                    <div class="form-group"><label>🚙 Tarif Mobil / jam</label><div class="input-wrap"><input type="number" id="setMobil" placeholder="3000"></div></div>
+                    <div class="form-group"><label>🎁 Diskon Member (%)</label><div class="input-wrap"><input type="number" id="setDiskon" placeholder="10" min="0" max="100"></div></div>
                     <button class="btn btn-success" onclick="simpanSetting()">💾 Simpan</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bottom Navigation akan di-generate otomatis oleh JavaScript -->
-    <!-- MENU DRAWER untuk Mobile (Tampil seperti Sidebar Laptop) -->
-<div class="menu-drawer-overlay" id="menuDrawerOverlay" onclick="closeMenuDrawer()"></div>
-<div class="menu-drawer" id="menuDrawer">
-    <div class="menu-drawer-header">
-        <div style="display:flex;align-items:center;gap:10px;">
-            <div class="sidebar-logo">
-                <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo">
+    <!-- ============================================ -->
+    <!-- MENU DRAWER untuk Mobile (Slide dari Kiri) -->
+    <!-- ============================================ -->
+    <div class="menu-drawer-overlay" id="menuDrawerOverlay" onclick="closeMenuDrawer()"></div>
+    <div class="menu-drawer" id="menuDrawer">
+        <div class="menu-drawer-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="sidebar-logo">
+                    <img src="https://i.ibb.co.com/Q7LxB0wg/download-1.png" alt="Logo">
+                </div>
+                <div>
+                    <h3 style="font-size:14px;margin:0;color:var(--accent-teal);">PARKIR PREMIUM</h3>
+                    <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v9.0</p>
+                </div>
             </div>
-            <div>
-                <h3 style="font-size:14px;margin:0;color:var(--accent-teal);">PARKIR PREMIUM</h3>
-                <p style="font-size:10px;color:var(--text-muted);margin:2px 0 0 0;">Kab. Ende • v9.0</p>
+            <button class="menu-drawer-close" onclick="closeMenuDrawer()">✕</button>
+        </div>
+        
+        <!-- Menu akan di-generate otomatis oleh JavaScript -->
+        <div class="nav-section" id="drawerMenu"></div>
+        
+        <div class="nav-section">
+            <div class="nav-item" onclick="doLogout(); closeMenuDrawer();" style="color:var(--danger);">
+                <span class="icon">🚪</span>Logout
             </div>
         </div>
-        <button class="menu-drawer-close" onclick="closeMenuDrawer()">✕</button>
     </div>
-    
-    <!-- Menu akan di-generate otomatis oleh JavaScript -->
-    <div class="nav-section" id="drawerMenu"></div>
-    
-    <div class="nav-section">
-        <div class="nav-item" onclick="doLogout(); closeMenuDrawer();" style="color:var(--danger);">
-            <span class="icon">🚪</span>Logout
-        </div>
-    </div>
-</div>
+    <!-- ============================================ -->
+    <!-- AKHIR MENU DRAWER -->
+    <!-- ============================================ -->
 
-<!-- HAPUS bagian ini jika ada: -->
-<!-- <nav class="mobile-bottom-nav" id="mobileNav"></nav> -->
 </div>
 
 <!-- MODAL UTAMA -->
