@@ -327,6 +327,100 @@ body{background:var(--bg-dark);color:var(--text-primary);min-height:100vh;overfl
     .print-area { position: absolute; left: 0; top: 0; width: 100%; }
     .mobile-bottom-nav, .sidebar, .topbar, .btn-logout { display: none !important; }
 }
+    /* ==========================================
+   MENU DRAWER untuk Mobile
+   ========================================== */
+.menu-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.menu-drawer-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+.menu-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+.menu-drawer.active {
+    transform: translateX(0);
+}
+
+.menu-drawer-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.menu-drawer-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.menu-drawer-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Di mobile, sidebar desktop tetap hidden */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none !important;
+    }
+    
+    .main {
+        margin-left: 0 !important;
+        padding-bottom: 20px !important;
+    }
+    
+    .content {
+        padding: 12px !important;
+    }
+    
+    .menu-toggle {
+        display: block !important;
+    }
+    
+    .topbar {
+        padding: 0 12px !important;
+    }
+}
+
+/* Di laptop, menu drawer hidden */
+@media (min-width: 769px) {
+    .menu-drawer-overlay,
+    .menu-drawer {
+        display: none !important;
+    }
+}
 </style>
 </head>
 <body>
