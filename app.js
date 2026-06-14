@@ -64,37 +64,38 @@ const PAGE_TITLES = {
 // ==========================================
 // GENERATE MENU OTOMATIS (Dengan Debug)
 // ==========================================
+// ==========================================
+// GENERATE MENU OTOMATIS (Sidebar Laptop + Drawer Mobile)
+// ==========================================
 function generateMenus(userRole) {
-    console.log('🔧 Generating menus for role:', userRole);
+    console.log(' Generating menus for role:', userRole);
     
     const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
     console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
     
+    // Generate untuk Sidebar (Laptop)
     generateSidebarMenu(filteredMenus);
-    generateBottomNav(filteredMenus);
+    
+    // Generate untuk Drawer (Mobile)
+    generateDrawerMenu(filteredMenus);
+    
+    // Generate Quick Actions (Dashboard)
     generateQuickActions(filteredMenus);
 }
 
 function generateSidebarMenu(menus) {
     const sidebarMenu = document.getElementById('sidebarMenu');
-    if (!sidebarMenu) {
-        console.error('❌ sidebarMenu element not found!');
-        return;
-    }
+    if (!sidebarMenu) return;
     
     const groups = {
-        utama: { title: '📂 Utama', items: [] },
+        utama: { title: ' Utama', items: [] },
         member: { title: '👥 Member', items: [] },
         laporan: { title: '📊 Laporan', items: [] },
         memberPortal: { title: '🏠 Portal Member', items: [] }
     };
     
     menus.forEach(menu => {
-        if (groups[menu.group]) {
-            groups[menu.group].items.push(menu);
-        } else {
-            console.warn('⚠️ Menu group tidak dikenali:', menu.group, menu.id);
-        }
+        if (groups[menu.group]) groups[menu.group].items.push(menu);
     });
     
     let html = '';
@@ -109,45 +110,70 @@ function generateSidebarMenu(menus) {
     });
     
     sidebarMenu.innerHTML = html;
-    console.log('✅ Sidebar menu generated. Total items:', menus.length);
 }
 
-function generateBottomNav(menus) {
-    const bottomNav = document.getElementById('mobileNav');
-    if (!bottomNav) {
-        console.error('❌ mobileNav element not found!');
-        return;
-    }
+// FUNGSI BARU: Generate Menu Drawer untuk Mobile
+function generateDrawerMenu(menus) {
+    const drawerMenu = document.getElementById('drawerMenu');
+    if (!drawerMenu) return;
     
-    // Ambil menu dengan priority 1-4 untuk bottom nav
-    const navMenus = menus
-        .filter(m => m.mobilePriority <= 4)
-        .sort((a, b) => a.mobilePriority - b.mobilePriority);
+    const groups = {
+        utama: { title: '📂 Utama', items: [] },
+        member: { title: '👥 Member', items: [] },
+        laporan: { title: '📊 Laporan', items: [] },
+        memberPortal: { title: '🏠 Portal Member', items: [] }
+    };
     
-    console.log('📱 Bottom nav menus:', navMenus.map(m => m.id));
-    
-    let html = '';
-    navMenus.forEach((menu, index) => {
-        html += `<a class="mobile-nav-item ${index === 0 ? 'active' : ''}" data-page="${menu.id}" onclick="showPage('${menu.id}', this)"><span class="icon">${menu.icon}</span><span>${menu.label}</span></a>`;
+    menus.forEach(menu => {
+        if (groups[menu.group]) groups[menu.group].items.push(menu);
     });
     
-    // Tambah tombol Logout
-    html += `<a class="mobile-nav-item" onclick="doLogout()" style="color:var(--danger);"><span class="icon">🚪</span><span>Logout</span></a>`;
+    let html = '';
+    Object.keys(groups).forEach(groupKey => {
+        const group = groups[groupKey];
+        if (group.items.length === 0) return;
+        
+        html += `<div class="nav-section-title">${group.title}</div>`;
+        group.items.forEach(menu => {
+            html += `<div class="nav-item" data-page="${menu.id}" onclick="showPage('${menu.id}', this); closeMenuDrawer();"><span class="icon">${menu.icon}</span>${menu.label}</div>`;
+        });
+    });
     
-    bottomNav.innerHTML = html;
-    console.log('✅ Bottom nav generated. Total items:', navMenus.length + 1);
+    drawerMenu.innerHTML = html;
+}
+
+// FUNGSI BARU: Buka Menu Drawer
+function openMenuDrawer() {
+    document.getElementById('menuDrawerOverlay').classList.add('active');
+    document.getElementById('menuDrawer').classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent scroll
+}
+
+// FUNGSI BARU: Tutup Menu Drawer
+function closeMenuDrawer() {
+    document.getElementById('menuDrawerOverlay').classList.remove('active');
+    document.getElementById('menuDrawer').classList.remove('active');
+    document.body.style.overflow = ''; // Restore scroll
+}
+
+// Update fungsi toggleSidebar untuk mobile
+function toggleSidebar() {
+    // Di mobile, buka menu drawer
+    if (window.innerWidth <= 768) {
+        openMenuDrawer();
+    } else {
+        // Di laptop, toggle sidebar (jika diperlukan)
+        document.getElementById('sidebar').classList.toggle('open');
+    }
 }
 
 function generateQuickActions(menus) {
     const container = document.getElementById('quickActions');
     if (!container) return;
     
-    // Untuk Admin/Operator: tampilkan 4 aksi cepat
-    // Untuk Member: tampilkan info berbeda
     const role = currentUser?.role;
     
     if (role === 'member') {
-        // Member tidak perlu aksi cepat, kosongkan
         container.innerHTML = '';
         return;
     }
@@ -181,7 +207,16 @@ function generateQuickActions(menus) {
 }
 
 function setActiveMenu(pageId) {
-    document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(item => {
+    // Set active di sidebar (laptop)
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Set active di drawer (mobile)
+    document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-page') === pageId) {
             item.classList.add('active');
