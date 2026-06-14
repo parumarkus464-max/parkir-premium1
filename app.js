@@ -976,8 +976,9 @@ async function doKeluar(kode) {
     await db.ref('history').push(historyData);
     await db.ref('parkir_aktif/' + key).remove();
     
-    const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
-    const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
+    // Gunakan fungsi tampilkanStrukOtomatis
+    tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir);
+}
     
     let struk = `
     <div id="struk-content" class="struk" style="background:white;color:black;padding:24px;border-radius:12px;font-family:'Courier New',monospace;max-width:400px;margin:0 auto;">
@@ -1055,24 +1056,66 @@ function startScanner() {
     if (scannerInstance) return;
     scannerInstance = new Html5Qrcode("reader");
     const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    document.getElementById('scanStatus').textContent = '📷 Scan QR: NIK (Masuk/Keluar) atau Kode Tiket (Keluar)';
+    document.getElementById('scanStatus').style.color = 'var(--accent-cyan)';
+    
     scannerInstance.start({ facingMode: "environment" }, config,
         async (text) => {
             document.getElementById('scanStatus').textContent = '✅ Terdeteksi: ' + text;
             document.getElementById('scanStatus').style.color = 'var(--accent-teal)';
+            
             try { scannerInstance.stop(); scannerInstance = null; } catch(e){}
             
-            const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
-            if (memberSnap.exists()) {
-                const m = Object.values(memberSnap.val())[0];
-                document.getElementById('inNik').value = m.nik;
-                document.getElementById('inNama').value = m.nama;
-                document.getElementById('inPlat').value = m.nomor_kendaraan;
-                document.getElementById('inJenis').value = m.jenis_kendaraan;
-                selectedMember = m;
-                showPage('masuk', document.querySelector('[data-page="masuk"]'));
-                toast('Member terdeteksi! Silakan proses masuk', 'success');
-            } else {
+            // DETEKSI FORMAT
+            const isNIK = /^\d{10,20}$/.test(text);
+            const isKodeTiket = text.toUpperCase().startsWith('PK');
+            
+            console.log('🔍 Scan:', text, '| NIK:', isNIK, '| Tiket:', isKodeTiket);
+            
+            if (isNIK) {
+                // ===== SCAN NIK MEMBER =====
+                const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
+                
+                if (!memberSnap.exists()) {
+                    toast('❌ NIK tidak terdaftar sebagai member', 'error');
+                    setTimeout(() => startScanner(), 2000);
+                    return;
+                }
+                
+                const member = Object.values(memberSnap.val())[0];
+                
+                // CEK: Apakah member sedang parkir?
+                const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(text).once('value');
+                
+                if (parkirSnap.exists()) {
+                    // ===== MEMBER SEDANG PARKIR → PROSES KELUAR OTOMATIS =====
+                    const parkirData = Object.values(parkirSnap.val())[0];
+                    const kodeTiket = parkirData.kode_tiket;
+                    
+                    toast('🚪 Member sedang parkir! Proses keluar...', 'info');
+                    
+                    // Langsung proses keluar
+                    await doKeluarByNIK(kodeTiket, member);
+                } else {
+                    // ===== MEMBER TIDAK PARKIR → PROSES MASUK =====
+                    document.getElementById('inNik').value = member.nik;
+                    document.getElementById('inNama').value = member.nama;
+                    document.getElementById('inPlat').value = member.nomor_kendaraan;
+                    document.getElementById('inJenis').value = member.jenis_kendaraan;
+                    selectedMember = member;
+                    
+                    showPage('masuk', document.querySelector('[data-page="masuk"]'));
+                    toast('✅ Member terdeteksi! Klik "Proses Masuk"', 'success');
+                }
+            } 
+            else if (isKodeTiket) {
+                // ===== SCAN KODE TIKET → PROSES KELUAR =====
                 await doKeluar(text.toUpperCase());
+            } 
+            else {
+                toast('❓ Format tidak dikenali', 'error');
+                setTimeout(() => startScanner(), 2000);
             }
         },
         (err) => {}
@@ -1100,6 +1143,196 @@ async function prosesScanManual() {
     } else {
         await doKeluar(val);
     }
+}
+
+// ==========================================
+// KELUAR OTOMATIS BY NIK (LANGSUNG CETAK STRUK)
+// ==========================================
+async function doKeluarByNIK(kodeTiket, member) {
+    const snap = await db.ref('parkir_aktif').orderByChild('kode_tiket').equalTo(kodeTiket).once('value');
+    if (!snap.exists()) {
+        toast('❌ Data parkir tidak ditemukan', 'error');
+        return;
+    }
+    
+    const key = Object.keys(snap.val())[0];
+    const data = snap.val()[key];
+    
+    // Hitung waktu & biaya
+    let tMasuk = new Date(data.waktu_masuk);
+    if (isNaN(tMasuk.getTime())) tMasuk = new Date(data.waktu_masuk.replace(' ', 'T'));
+    
+    const tKeluar = new Date();
+    const diffMs = tKeluar - tMasuk;
+    const jam = Math.max(1, Math.ceil(diffMs / 3600000));
+    
+    const tarifDasar = settings['tarif_' + data.jenis_kendaraan] || 1000;
+    let diskonPersen = 0, tarifAkhir = tarifDasar, potongan = 0;
+    
+    if (data.is_member) {
+        diskonPersen = settings.diskon || 0;
+        potongan = Math.round(tarifDasar * (diskonPersen / 100));
+        tarifAkhir = tarifDasar - potongan;
+    }
+    
+    const biaya = jam * tarifAkhir;
+    
+    // Potong saldo member
+    let saldoAkhir = null;
+    if (data.is_member && data.nomor_member) {
+        const mSnap = await db.ref('members').orderByChild('nomor_member').equalTo(data.nomor_member).once('value');
+        if (mSnap.exists()) {
+            const mKey = Object.keys(mSnap.val())[0];
+            const memberData = mSnap.val()[mKey];
+            
+            if (memberData.saldo < biaya) {
+                toast(`❌ Saldo tidak cukup! Biaya: ${formatRupiah(biaya)}, Saldo: ${formatRupiah(memberData.saldo)}`, 'error');
+                return;
+            }
+            
+            saldoAkhir = memberData.saldo - biaya;
+            await db.ref('members/' + mKey + '/saldo').set(saldoAkhir);
+        }
+    }
+    
+    // Simpan ke history
+    const historyData = {
+        ...data,
+        waktu_keluar: tKeluar.toISOString(),
+        waktu_keluar_date: tKeluar.toISOString().split('T')[0],
+        lama_jam: jam,
+        tarif_per_jam: tarifAkhir,
+        diskon_persen: diskonPersen,
+        total_biaya: biaya,
+        operator_keluar: currentUser.nama || currentUser.username,
+        saldo_akhir: saldoAkhir
+    };
+    
+    await db.ref('history').push(historyData);
+    await db.ref('parkir_aktif/' + key).remove();
+    
+    // LANGSUNG TAMPILKAN STRUK DENGAN TOMBOL CETAK
+    tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir);
+}
+
+// ==========================================
+// TAMPILKAN STRUK OTOMATIS (DENGAN TOMBOL CETAK LANGSUNG)
+// ==========================================
+function tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir) {
+    const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
+    const accent = data.is_member ? 'var(--success)' : 'var(--accent-gold)';
+    
+    const strukHTML = `
+    <div id="struk-content" style="background:white;color:black;padding:24px;border-radius:12px;font-family:'Courier New',monospace;max-width:400px;margin:0 auto;">
+        <div style="text-align:center;border-bottom:2px dashed #ccc;padding-bottom:12px;margin-bottom:12px;">
+            <h3 style="font-size:18px;margin:0;">🧾 STRUK — ${tag}</h3>
+            <p style="font-size:11px;margin:4px 0 0 0;">PARKIR PREMIUM</p>
+            <p style="font-size:10px;margin:2px 0;">Kabupaten Ende</p>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Nama</span><span>${data.nama}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Kendaraan</span><span>${data.nomor_kendaraan}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Jenis</span><span>${data.jenis_kendaraan.toUpperCase()}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Masuk</span><span>${tMasuk.toLocaleString('id-ID')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Keluar</span><span>${tKeluar.toLocaleString('id-ID')}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px;font-size:14px;font-weight:bold;background:#f0f0f0;margin:8px 0;border-radius:4px;"><span>Lama Parkir</span><span>${jam} Jam</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Tarif Dasar</span><span>${formatRupiah(tarifDasar)}/jam</span></div>
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:green;"><span>Diskon Member (${diskonPersen}%)</span><span>- ${formatRupiah(potongan)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:gray;"><span>Diskon</span><span>Tidak Ada (Reguler)</span></div>'}
+        ${diskonPersen > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;font-weight:bold;"><span>Tarif Akhir</span><span>${formatRupiah(tarifAkhir)}/jam</span></div>` : ''}
+        <div style="border-top:2px dashed #ccc;margin-top:12px;padding-top:12px;font-weight:bold;font-size:18px;display:flex;justify-content:space-between;">
+            <span>TOTAL BAYAR</span>
+            <span style="color:${accent};">${formatRupiah(biaya)}</span>
+        </div>
+        ${saldoAkhir !== null ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;margin-top:8px;"><span>Sisa Saldo</span><span style="color:blue;font-weight:bold;">${formatRupiah(saldoAkhir)}</span></div>` : ''}
+        <div style="margin-top:16px;padding:12px;background:#f9f9f9;border-radius:8px;font-size:11px;color:#666;">
+            <strong>Keterangan:</strong><br>
+            ${jam} jam × ${formatRupiah(tarifAkhir)} = ${formatRupiah(biaya)}<br>
+            Petugas: ${currentUser.nama || currentUser.username}
+        </div>
+        <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px dashed #ccc;color:#666;font-size:12px;">
+            Terima kasih 🙏<br>www.parkirpremium.id
+        </div>
+    </div>
+    
+    <!-- TOMBOL AKSI -->
+    <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="cetakStrukOtomatis()" class="btn btn-success" style="flex:2;padding:14px;font-size:15px;font-weight:bold;background:var(--success);color:white;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+            🖨️ CETAK STRUK
+        </button>
+        <button onclick="closeModal()" class="btn btn-ghost" style="flex:1;padding:14px;font-size:14px;">
+            Tutup
+        </button>
+    </div>
+    
+    <!-- NOTIFIKASI SUKSES -->
+    <div style="margin-top:16px;padding:12px;background:rgba(16,185,129,0.1);border:1px solid var(--success);border-radius:10px;text-align:center;">
+        <p style="color:var(--success);font-weight:bold;margin:0;font-size:14px;">✅ Kendaraan berhasil keluar!</p>
+        <p style="color:var(--text-secondary);font-size:12px;margin:4px 0 0 0;">Klik tombol cetak untuk print struk</p>
+    </div>`;
+    
+    showModal('✅ Proses Keluar Berhasil', strukHTML);
+    
+    // AUTO-FOCUS ke tombol cetak setelah 500ms
+    setTimeout(() => {
+        const cetakBtn = document.querySelector('button[onclick="cetakStrukOtomatis()"]');
+        if (cetakBtn) {
+            cetakBtn.focus();
+            cetakBtn.style.animation = 'pulse 1s ease-in-out 3';
+        }
+    }, 500);
+}
+
+// ==========================================
+// CETAK STRUK OTOMATIS
+// ==========================================
+function cetakStrukOtomatis() {
+    const strukContent = document.getElementById('struk-content');
+    if (!strukContent) {
+        toast('❌ Struk tidak ditemukan', 'error');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Struk Parkir - ${new Date().toLocaleString('id-ID')}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 10px; }
+                    @page { size: auto; margin: 10mm; }
+                }
+                body { 
+                    font-family: 'Courier New', monospace; 
+                    max-width: 400px; 
+                    margin: 0 auto; 
+                    padding: 20px;
+                    color: black;
+                    background: white;
+                }
+                button { display: none !important; }
+            </style>
+        </head>
+        <body>
+            ${strukContent.innerHTML}
+            <script>
+                window.onload = function() {
+                    setTimeout(() => {
+                        window.print();
+                    }, 300);
+                    
+                    // Auto close setelah print
+                    window.onafterprint = function() {
+                        setTimeout(() => window.close(), 500);
+                    };
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    
+    toast('🖨️ Menyiapkan cetak...', 'success');
 }
 
 // ==========================================
