@@ -62,24 +62,16 @@ const PAGE_TITLES = {
 };
 
 // ==========================================
-// GENERATE MENU OTOMATIS (Dengan Debug)
-// ==========================================
-// ==========================================
-// GENERATE MENU OTOMATIS (Sidebar Laptop + Drawer Mobile)
+// GENERATE MENU OTOMATIS (Sidebar + Drawer)
 // ==========================================
 function generateMenus(userRole) {
-    console.log(' Generating menus for role:', userRole);
+    console.log('🔧 Generating menus for role:', userRole);
     
     const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
     console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
     
-    // Generate untuk Sidebar (Laptop)
     generateSidebarMenu(filteredMenus);
-    
-    // Generate untuk Drawer (Mobile)
     generateDrawerMenu(filteredMenus);
-    
-    // Generate Quick Actions (Dashboard)
     generateQuickActions(filteredMenus);
 }
 
@@ -88,7 +80,7 @@ function generateSidebarMenu(menus) {
     if (!sidebarMenu) return;
     
     const groups = {
-        utama: { title: ' Utama', items: [] },
+        utama: { title: '📂 Utama', items: [] },
         member: { title: '👥 Member', items: [] },
         laporan: { title: '📊 Laporan', items: [] },
         memberPortal: { title: '🏠 Portal Member', items: [] }
@@ -112,10 +104,13 @@ function generateSidebarMenu(menus) {
     sidebarMenu.innerHTML = html;
 }
 
-// FUNGSI BARU: Generate Menu Drawer untuk Mobile
+// Generate Menu Drawer untuk Mobile
 function generateDrawerMenu(menus) {
     const drawerMenu = document.getElementById('drawerMenu');
-    if (!drawerMenu) return;
+    if (!drawerMenu) {
+        console.error('❌ drawerMenu element not found!');
+        return;
+    }
     
     const groups = {
         utama: { title: '📂 Utama', items: [] },
@@ -140,39 +135,57 @@ function generateDrawerMenu(menus) {
     });
     
     drawerMenu.innerHTML = html;
+    console.log('✅ Drawer menu generated. Total items:', menus.length);
 }
 
-// FUNGSI BARU: Buka Menu Drawer
+// Buka Menu Drawer
 function openMenuDrawer() {
     document.getElementById('menuDrawerOverlay').classList.add('active');
     document.getElementById('menuDrawer').classList.add('active');
-    document.body.style.overflow = 'hidden'; // Prevent scroll
+    document.body.style.overflow = 'hidden';
 }
 
-// FUNGSI BARU: Tutup Menu Drawer
+// Tutup Menu Drawer
 function closeMenuDrawer() {
     document.getElementById('menuDrawerOverlay').classList.remove('active');
     document.getElementById('menuDrawer').classList.remove('active');
-    document.body.style.overflow = ''; // Restore scroll
+    document.body.style.overflow = '';
 }
 
-// Update fungsi toggleSidebar untuk mobile
+// Update toggleSidebar untuk mobile
 function toggleSidebar() {
-    // Di mobile, buka menu drawer
     if (window.innerWidth <= 768) {
         openMenuDrawer();
     } else {
-        // Di laptop, toggle sidebar (jika diperlukan)
         document.getElementById('sidebar').classList.toggle('open');
     }
 }
 
+// Update setActiveMenu untuk sync sidebar & drawer
+function setActiveMenu(pageId) {
+    // Set active di sidebar (laptop)
+    document.querySelectorAll('#sidebarMenu .nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Set active di drawer (mobile)
+    document.querySelectorAll('#drawerMenu .nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageId) {
+            item.classList.add('active');
+        }
+    });
+}
+
+// Generate Quick Actions
 function generateQuickActions(menus) {
     const container = document.getElementById('quickActions');
     if (!container) return;
     
     const role = currentUser?.role;
-    
     if (role === 'member') {
         container.innerHTML = '';
         return;
@@ -200,7 +213,7 @@ function generateQuickActions(menus) {
     
     container.innerHTML = actions.map(menu => `
         <div class="menu-tile" onclick="showPage('${menu.id}')">
-            <div class="tile-icon" style="background:${colors[menu.id] || 'rgba(0,229,160,0.15)'};color:${textColors[menu.id] || 'var(--accent-teal)'};">${menu.icon}</div>
+            <div class="tile-icon" style="background:${colors[menu.id]};color:${textColors[menu.id]};">${menu.icon}</div>
             <div class="tile-label">${menu.label}</div>
         </div>
     `).join('');
