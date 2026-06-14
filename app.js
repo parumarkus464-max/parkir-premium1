@@ -23,9 +23,11 @@ let scannerInstance = null;
 let settings = { tarif_motor: 1000, tarif_mobil: 3000, diskon: 10, biaya_motor: 30000, biaya_mobil: 90000 };
 let isTopupProcessing = false;
 let editingUsername = null;
+let pendingPaymentData = null; // Data pembayaran pending (VA)
+let pollingInterval = null; // Interval untuk polling status bayar
 
 // ==========================================
-// KONFIGURASI MENU (Single Source of Truth)
+// KONFIGURASI MENU
 // ==========================================
 const MENU_CONFIG = [
     { id: 'dashboard', icon: '📊', label: 'Dashboard', roles: ['admin', 'operator'], group: 'utama', mobilePriority: 1 },
@@ -37,10 +39,11 @@ const MENU_CONFIG = [
     { id: 'dataMember', icon: '🗂️', label: 'Data Member', roles: ['admin'], group: 'member', mobilePriority: 7 },
     { id: 'cetakKartu', icon: '🧾', label: 'Cetak Kartu', roles: ['admin'], group: 'member', mobilePriority: 8 },
     { id: 'topup', icon: '💰', label: 'Topup Saldo', roles: ['admin'], group: 'member', mobilePriority: 9 },
-    { id: 'history', icon: '⏱️', label: 'History', roles: ['admin'], group: 'laporan', mobilePriority: 10 },
-    { id: 'laporan', icon: '📑', label: 'Laporan', roles: ['admin'], group: 'laporan', mobilePriority: 11 },
-    { id: 'setting', icon: '⚙️', label: 'Pengaturan', roles: ['admin'], group: 'laporan', mobilePriority: 12 },
-    { id: 'manageUsers', icon: '👥', label: 'Manage User', roles: ['admin'], group: 'laporan', mobilePriority: 13 },
+    { id: 'pendingPayments', icon: '⏳', label: 'Pembayaran Pending', roles: ['admin'], group: 'member', mobilePriority: 10 },
+    { id: 'history', icon: '⏱️', label: 'History', roles: ['admin'], group: 'laporan', mobilePriority: 11 },
+    { id: 'laporan', icon: '📑', label: 'Laporan', roles: ['admin'], group: 'laporan', mobilePriority: 12 },
+    { id: 'setting', icon: '⚙️', label: 'Pengaturan', roles: ['admin'], group: 'laporan', mobilePriority: 13 },
+    { id: 'manageUsers', icon: '👥', label: 'Manage User', roles: ['admin'], group: 'laporan', mobilePriority: 14 },
     { id: 'memberPortal', icon: '🏠', label: 'Portal Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 1 },
     { id: 'memberKartu', icon: '🎫', label: 'Kartu Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 2 },
     { id: 'memberRiwayat', icon: '📜', label: 'Riwayat Saya', roles: ['member'], group: 'memberPortal', mobilePriority: 3 },
@@ -50,18 +53,16 @@ const PAGE_TITLES = {
     dashboard: 'Dashboard', masuk: 'Kendaraan Masuk', keluar: 'Kendaraan Keluar',
     scanner: 'Scan QR', daftarMember: 'Daftar Member', dataMember: 'Data Member',
     cetakKartu: 'Cetak Kartu', topup: 'Topup Saldo', parkirAktif: 'Parkir Aktif',
-    history: 'History', laporan: 'Laporan', setting: 'Pengaturan', manageUsers: 'Manage User',
+    pendingPayments: 'Pembayaran Pending', history: 'History', laporan: 'Laporan',
+    setting: 'Pengaturan', manageUsers: 'Manage User',
     memberPortal: 'Portal Saya', memberKartu: 'Kartu Saya', memberRiwayat: 'Riwayat Saya'
 };
 
 // ==========================================
-// MENU GENERATION (Sidebar + Drawer + Quick Actions)
+// MENU GENERATION
 // ==========================================
 function generateMenus(userRole) {
-    console.log('🔧 Generating menus for role:', userRole);
     const filteredMenus = MENU_CONFIG.filter(menu => menu.roles.includes(userRole));
-    console.log('✅ Filtered menus:', filteredMenus.map(m => m.id));
-    
     generateSidebarMenu(filteredMenus);
     generateDrawerMenu(filteredMenus);
     generateQuickActions(filteredMenus);
@@ -97,10 +98,7 @@ function generateSidebarMenu(menus) {
 
 function generateDrawerMenu(menus) {
     const drawerMenu = document.getElementById('drawerMenu');
-    if (!drawerMenu) {
-        console.error('❌ drawerMenu element not found!');
-        return;
-    }
+    if (!drawerMenu) return;
     
     const groups = {
         utama: { title: '📂 Utama', items: [] },
@@ -124,7 +122,6 @@ function generateDrawerMenu(menus) {
     });
     
     drawerMenu.innerHTML = html;
-    console.log('✅ Drawer menu generated. Total items:', menus.length);
 }
 
 function generateQuickActions(menus) {
@@ -176,7 +173,7 @@ function setActiveMenu(pageId) {
 }
 
 // ==========================================
-// MENU DRAWER FUNCTIONS (Mobile)
+// MENU DRAWER FUNCTIONS
 // ==========================================
 function openMenuDrawer() {
     const overlay = document.getElementById('menuDrawerOverlay');
@@ -184,7 +181,6 @@ function openMenuDrawer() {
     if (overlay) overlay.classList.add('active');
     if (drawer) drawer.classList.add('active');
     document.body.style.overflow = 'hidden';
-    console.log('✅ Menu drawer opened');
 }
 
 function closeMenuDrawer() {
@@ -193,7 +189,6 @@ function closeMenuDrawer() {
     if (overlay) overlay.classList.remove('active');
     if (drawer) drawer.classList.remove('active');
     document.body.style.overflow = '';
-    console.log('✅ Menu drawer closed');
 }
 
 function toggleSidebar() {
@@ -257,6 +252,11 @@ function showModal(title, content) {
 
 function closeModal() {
     document.getElementById('modal').classList.remove('active');
+    // Stop polling jika ada
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
 }
 
 // ==========================================
@@ -334,6 +334,17 @@ async function doLogin() {
         return toast('Username atau password salah', 'error');
     }
     
+    // CEK: Jika user adalah member, cek status bayar
+    if (user.role === 'member') {
+        const memberSnap = await db.ref('members').orderByChild('nik').equalTo(u).once('value');
+        if (memberSnap.exists()) {
+            const member = Object.values(memberSnap.val())[0];
+            if (member.status_bayar === 'pending') {
+                return toast('⏳ Akun Anda belum aktif. Silakan selesaikan pembayaran terlebih dahulu.', 'error');
+            }
+        }
+    }
+    
     if (!user.role) user.role = 'member';
     
     currentUser = {
@@ -356,6 +367,7 @@ function doLogout() {
     clearSession();
     if (scannerInstance) { try { scannerInstance.stop(); scannerInstance = null; } catch(e){} }
     closeMenuDrawer();
+    if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
     document.getElementById('mainApp').classList.remove('active');
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('loginPass').value = '';
@@ -363,7 +375,7 @@ function doLogout() {
 }
 
 // ==========================================
-// MANAGE USERS (Admin Only)
+// MANAGE USERS
 // ==========================================
 async function renderUserList() {
     const snap = await db.ref('users').once('value');
@@ -538,6 +550,7 @@ function showPage(pageId, el) {
     if (pageId === 'dataMember') renderMembers();
     if (pageId === 'cetakKartu') renderCetak();
     if (pageId === 'parkirAktif') renderParkirAktif();
+    if (pageId === 'pendingPayments') renderPendingPayments();
     if (pageId === 'history') renderHistory();
     if (pageId === 'laporan') renderLaporan();
     if (pageId === 'setting') loadSetting();
@@ -567,7 +580,19 @@ function refreshDashboard() {
     });
     db.ref('members').on('value', s => {
         const data = s.val() || {};
-        document.getElementById('statMember').textContent = Object.keys(data).length;
+        const members = Object.values(data);
+        const activeMembers = members.filter(m => m.status_bayar === 'paid').length;
+        const pendingMembers = members.filter(m => m.status_bayar === 'pending').length;
+        document.getElementById('statMember').textContent = activeMembers;
+        
+        // Tampilkan notifikasi pending di dashboard
+        if (pendingMembers > 0) {
+            const notif = document.getElementById('pendingNotif');
+            if (notif) {
+                notif.innerHTML = `⏳ <strong>${pendingMembers}</strong> member belum menyelesaikan pembayaran. <a onclick="showPage('pendingPayments')" style="color:var(--accent-teal);cursor:pointer;text-decoration:underline;">Lihat Detail</a>`;
+                notif.style.display = 'block';
+            }
+        }
     });
     
     const today = new Date().toISOString().split('T')[0];
@@ -594,6 +619,102 @@ function renderRecentActivity(parkirData) {
 }
 
 // ==========================================
+// PEMBAYARAN PENDING (Menu Baru)
+// ==========================================
+async function renderPendingPayments() {
+    const snap = await db.ref('members').orderByChild('status_bayar').equalTo('pending').once('value');
+    const pendingMembers = snap.val() ? Object.values(snap.val()) : [];
+    
+    const list = document.getElementById('pendingList');
+    const stats = document.getElementById('pendingStats');
+    
+    const totalPending = pendingMembers.reduce((a,b) => a + (b.biaya_daftar || 0), 0);
+    
+    stats.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(245,158,11,0.1);padding:12px;border-radius:10px;text-align:center;">
+                <p style="color:var(--text-muted);font-size:11px;margin:0;">Total Pending</p>
+                <h3 style="color:var(--warning);margin:4px 0;">${pendingMembers.length} Member</h3>
+            </div>
+            <div style="background:rgba(239,68,68,0.1);padding:12px;border-radius:10px;text-align:center;">
+                <p style="color:var(--text-muted);font-size:11px;margin:0;">Total Tagihan</p>
+                <h3 style="color:var(--danger);margin:4px 0;">${formatRupiah(totalPending)}</h3>
+            </div>
+        </div>
+    `;
+    
+    if (pendingMembers.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">✅ Tidak ada pembayaran pending</p>';
+        return;
+    }
+    
+    list.innerHTML = pendingMembers.map(m => {
+        const waktuTunggu = Math.floor((Date.now() - new Date(m.tgl_daftar).getTime()) / 60000);
+        return `
+        <div class="list-item" style="border-left:3px solid var(--warning);">
+            <div class="list-item-info">
+                <h4>⏳ ${m.nama} <span class="badge" style="background:rgba(245,158,11,0.2);color:var(--warning);">BELUM BAYAR</span></h4>
+                <p style="color:var(--accent-teal);">${m.nomor_member}</p>
+                <p>${m.nomor_kendaraan} | ${m.jenis_kendaraan.toUpperCase()}</p>
+                <p style="color:var(--danger);font-weight:bold;">💰 Tagihan: ${formatRupiah(m.biaya_daftar || 0)}</p>
+                <p style="font-size:11px;color:var(--text-muted);">⏱️ Menunggu ${waktuTunggu} menit</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <button class="btn btn-sm btn-success" onclick="konfirmasiBayarManual('${m.nik}')">✅ Konfirmasi</button>
+                <button class="btn btn-sm btn-danger" onclick="batalkanPendaftaran('${m.nik}', '${m.nama.replace(/'/g, "\\'")}')">❌ Batalkan</button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+async function konfirmasiBayarManual(nik) {
+    if (!confirm('Konfirmasi pembayaran telah diterima?')) return;
+    
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    if (!snap.exists()) return toast('Member tidak ditemukan', 'error');
+    
+    const key = Object.keys(snap.val())[0];
+    const member = snap.val()[key];
+    
+    const berlaku = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
+    
+    await db.ref('members/' + key).update({
+        status_bayar: 'paid',
+        status: 'aktif',
+        saldo: member.biaya_daftar || 0,
+        tgl_berlaku: berlaku,
+        tgl_bayar: new Date().toISOString()
+    });
+    
+    // Buat akun login
+    await db.ref('users/' + nik).set({
+        username: nik,
+        password: hashPassword(nik),
+        role: 'member',
+        nama: member.nama,
+        createdAt: new Date().toISOString()
+    });
+    
+    toast(`✅ Pembayaran dikonfirmasi! Akun ${member.nama} aktif.`, 'success');
+    renderPendingPayments();
+}
+
+async function batalkanPendaftaran(nik, nama) {
+    if (!confirm(`Batalkan pendaftaran ${nama}? Data akan dihapus.`)) return;
+    
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    if (!snap.exists()) return;
+    
+    const key = Object.keys(snap.val())[0];
+    await db.ref('members/' + key).remove();
+    await db.ref('users/' + nik).remove();
+    
+    toast(`❌ Pendaftaran ${nama} dibatalkan`, 'info');
+    renderPendingPayments();
+}
+
+// ==========================================
 // MEMBER PORTAL
 // ==========================================
 async function loadMemberPortal() {
@@ -602,6 +723,28 @@ async function loadMemberPortal() {
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
     if (!snap.exists()) { toast('Data member tidak ditemukan', 'error'); return; }
     const member = Object.values(snap.val())[0];
+    
+    // Cek status bayar
+    if (member.status_bayar === 'pending') {
+        document.getElementById('mpNama').textContent = `Halo, ${member.nama}!`;
+        document.getElementById('mpNo').textContent = member.nomor_member;
+        document.getElementById('mpBerlaku').textContent = 'Menunggu Pembayaran';
+        document.getElementById('mpSaldo').textContent = 'Rp 0';
+        document.getElementById('mpStatus').textContent = 'PENDING';
+        document.getElementById('mpStatus').style.color = 'var(--warning)';
+        document.getElementById('mpPlat').textContent = member.nomor_kendaraan;
+        document.getElementById('mpJenis').textContent = (member.jenis_kendaraan || '-').toUpperCase();
+        
+        document.getElementById('mpRingkasan').innerHTML = `
+            <div style="background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:16px;text-align:center;">
+                <p style="color:var(--warning);font-weight:bold;font-size:16px;margin:0 0 8px 0;">⏳ Pembayaran Pending</p>
+                <p style="color:var(--text-secondary);font-size:12px;margin:0 0 12px 0;">Silakan selesaikan pembayaran untuk mengaktifkan akun</p>
+                <p style="color:var(--danger);font-size:18px;font-weight:bold;margin:0;">Tagihan: ${formatRupiah(member.biaya_daftar || 0)}</p>
+                <button onclick="lanjutkanPembayaranPendaftaran('${member.nik}')" class="btn btn-success" style="margin-top:12px;width:100%;">💳 Bayar Sekarang</button>
+            </div>
+        `;
+        return;
+    }
     
     document.getElementById('mpNama').textContent = `Halo, ${member.nama}!`;
     document.getElementById('mpNo').textContent = member.nomor_member;
@@ -631,6 +774,22 @@ async function loadMemberPortal() {
     `;
 }
 
+async function lanjutkanPembayaranPendaftaran(nik) {
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    if (!snap.exists()) return;
+    const member = Object.values(snap.val())[0];
+    
+    pendingPaymentData = {
+        nik: nik,
+        nomor_member: member.nomor_member,
+        nama: member.nama,
+        jumlah: member.biaya_daftar || 0,
+        tipe: 'pendaftaran'
+    };
+    
+    showModalPembayaran(member.biaya_daftar || 0, 'pendaftaran');
+}
+
 async function renderMemberKartu() {
     if (!currentUser || currentUser.role !== 'member') return;
     const nik = currentUser.username;
@@ -640,6 +799,18 @@ async function renderMemberKartu() {
         return;
     }
     const m = Object.values(snap.val())[0];
+    
+    if (m.status_bayar === 'pending') {
+        document.getElementById('memberKartuPreview').innerHTML = `
+            <div style="text-align:center;padding:30px;background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:12px;">
+                <div style="font-size:60px;margin-bottom:16px;">⏳</div>
+                <h3 style="color:var(--warning);margin-bottom:8px;">Pembayaran Pending</h3>
+                <p style="color:var(--text-secondary);">Kartu member akan aktif setelah pembayaran selesai</p>
+            </div>
+        `;
+        return;
+    }
+    
     document.getElementById('memberKartuPreview').innerHTML = `
         <div class="member-card-preview">
             <div class="card-header"><h3>🅿️ PARKIR PREMIUM</h3><span>MEMBER CARD</span></div>
@@ -669,6 +840,9 @@ function cetakKartuSaya() {
     db.ref('members').orderByChild('nik').equalTo(nik).once('value').then(snap => {
         if (!snap.exists()) return;
         const m = Object.values(snap.val())[0];
+        if (m.status_bayar === 'pending') {
+            return toast('⏳ Kartu belum bisa dicetak. Selesaikan pembayaran dulu.', 'error');
+        }
         cetakKartu(0, m.nomor_member, m.nama, m.nik, m.nomor_kendaraan, m.jenis_kendaraan, m.saldo||0, m.tgl_berlaku||'');
     });
 }
@@ -714,6 +888,15 @@ async function cekMemberMasuk() {
         return;
     }
     const m = Object.values(snap.val())[0];
+    
+    // Cek status bayar
+    if (m.status_bayar === 'pending') {
+        selectedMember = null;
+        info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--warning)';
+        info.innerHTML = `⏳ <strong>Member belum menyelesaikan pembayaran!</strong> Status: PENDING`;
+        return;
+    }
+    
     if (m.tgl_berlaku && new Date(m.tgl_berlaku) < new Date()) {
         selectedMember = null;
         info.style.display='block'; info.style.background='rgba(245,158,11,0.15)'; info.style.color='var(--accent-gold)';
@@ -775,7 +958,7 @@ async function prosesMasuk() {
 }
 
 // ==========================================
-// KENDARAAN KELUAR (dengan Struk Otomatis)
+// KENDARAAN KELUAR
 // ==========================================
 async function prosesKeluar() {
     const kode = sanitize(document.getElementById('outKode').value).toUpperCase();
@@ -839,9 +1022,6 @@ async function doKeluar(kode) {
     tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir);
 }
 
-// ==========================================
-// KELUAR OTOMATIS BY NIK (Scan Kartu Member)
-// ==========================================
 async function doKeluarByNIK(kodeTiket, member) {
     const snap = await db.ref('parkir_aktif').orderByChild('kode_tiket').equalTo(kodeTiket).once('value');
     if (!snap.exists()) {
@@ -876,12 +1056,10 @@ async function doKeluarByNIK(kodeTiket, member) {
         if (mSnap.exists()) {
             const mKey = Object.keys(mSnap.val())[0];
             const memberData = mSnap.val()[mKey];
-            
             if (memberData.saldo < biaya) {
                 toast(`❌ Saldo tidak cukup! Biaya: ${formatRupiah(biaya)}, Saldo: ${formatRupiah(memberData.saldo)}`, 'error');
                 return;
             }
-            
             saldoAkhir = memberData.saldo - biaya;
             await db.ref('members/' + mKey + '/saldo').set(saldoAkhir);
         }
@@ -903,7 +1081,7 @@ async function doKeluarByNIK(kodeTiket, member) {
 }
 
 // ==========================================
-// TAMPILKAN STRUK OTOMATIS (dengan Tombol Cetak)
+// STRUK OTOMATIS
 // ==========================================
 function tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkhir, potongan, diskonPersen, biaya, saldoAkhir) {
     const tag = data.is_member ? '🏅 MEMBER' : '👤 REGULER';
@@ -951,15 +1129,9 @@ function tampilkanStrukOtomatis(data, tMasuk, tKeluar, jam, tarifDasar, tarifAkh
     
     <div style="margin-top:16px;padding:12px;background:rgba(16,185,129,0.1);border:1px solid #10b981;border-radius:10px;text-align:center;">
         <p style="color:#10b981;font-weight:bold;margin:0;font-size:14px;">✅ Kendaraan berhasil keluar!</p>
-        <p style="color:#94a3b8;font-size:12px;margin:4px 0 0 0;">Klik tombol cetak untuk print struk</p>
     </div>`;
     
     showModal('✅ Proses Keluar Berhasil', strukHTML);
-    
-    setTimeout(() => {
-        const cetakBtn = document.querySelector('button[onclick="cetakStrukOtomatis()"]');
-        if (cetakBtn) cetakBtn.focus();
-    }, 500);
 }
 
 function cetakStrukOtomatis() {
@@ -976,18 +1148,8 @@ function cetakStrukOtomatis() {
         <head>
             <title>Struk Parkir - ${new Date().toLocaleString('id-ID')}</title>
             <style>
-                @media print {
-                    body { margin: 0; padding: 10px; }
-                    @page { size: auto; margin: 10mm; }
-                }
-                body { 
-                    font-family: 'Courier New', monospace; 
-                    max-width: 400px; 
-                    margin: 0 auto; 
-                    padding: 20px;
-                    color: black;
-                    background: white;
-                }
+                @media print { body { margin: 0; padding: 10px; } @page { size: auto; margin: 10mm; } }
+                body { font-family: 'Courier New', monospace; max-width: 400px; margin: 0 auto; padding: 20px; color: black; background: white; }
                 button { display: none !important; }
             </style>
         </head>
@@ -996,21 +1158,18 @@ function cetakStrukOtomatis() {
             <script>
                 window.onload = function() {
                     setTimeout(() => { window.print(); }, 300);
-                    window.onafterprint = function() {
-                        setTimeout(() => window.close(), 500);
-                    };
+                    window.onafterprint = function() { setTimeout(() => window.close(), 500); };
                 }
             <\/script>
         </body>
         </html>
     `);
     printWindow.document.close();
-    
     toast('🖨️ Menyiapkan cetak...', 'success');
 }
 
 // ==========================================
-// SCANNER (Multi-Fungsi: Masuk & Keluar)
+// SCANNER
 // ==========================================
 function startScanner() {
     if (scannerInstance) return;
@@ -1030,8 +1189,6 @@ function startScanner() {
             const isNIK = /^\d{10,20}$/.test(text);
             const isKodeTiket = text.toUpperCase().startsWith('PK');
             
-            console.log('🔍 Scan:', text, '| NIK:', isNIK, '| Tiket:', isKodeTiket);
-            
             if (isNIK) {
                 const memberSnap = await db.ref('members').orderByChild('nik').equalTo(text).once('value');
                 
@@ -1042,21 +1199,25 @@ function startScanner() {
                 }
                 
                 const member = Object.values(memberSnap.val())[0];
+                
+                // Cek status bayar
+                if (member.status_bayar === 'pending') {
+                    toast('⏳ Member belum bayar pendaftaran!', 'error');
+                    setTimeout(() => startScanner(), 2000);
+                    return;
+                }
+                
                 const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(text).once('value');
                 
                 if (parkirSnap.exists()) {
                     const parkirData = Object.values(parkirSnap.val())[0];
-                    const kodeTiket = parkirData.kode_tiket;
-                    
-                    toast('🚪 Member sedang parkir! Proses keluar...', 'info');
-                    await doKeluarByNIK(kodeTiket, member);
+                    await doKeluarByNIK(parkirData.kode_tiket, member);
                 } else {
                     document.getElementById('inNik').value = member.nik;
                     document.getElementById('inNama').value = member.nama;
                     document.getElementById('inPlat').value = member.nomor_kendaraan;
                     document.getElementById('inJenis').value = member.jenis_kendaraan;
                     selectedMember = member;
-                    
                     showPage('masuk', document.querySelector('[data-page="masuk"]'));
                     toast('✅ Member terdeteksi! Klik "Proses Masuk"', 'success');
                 }
@@ -1087,17 +1248,20 @@ async function prosesScanManual() {
     if (isNIK) {
         const memberSnap = await db.ref('members').orderByChild('nik').equalTo(val).once('value');
         if (memberSnap.exists()) {
+            const member = Object.values(memberSnap.val())[0];
+            if (member.status_bayar === 'pending') {
+                return toast('⏳ Member belum bayar pendaftaran!', 'error');
+            }
             const parkirSnap = await db.ref('parkir_aktif').orderByChild('nik').equalTo(val).once('value');
             if (parkirSnap.exists()) {
                 const parkirData = Object.values(parkirSnap.val())[0];
-                await doKeluarByNIK(parkirData.kode_tiket, Object.values(memberSnap.val())[0]);
+                await doKeluarByNIK(parkirData.kode_tiket, member);
             } else {
-                const m = Object.values(memberSnap.val())[0];
-                document.getElementById('inNik').value = m.nik;
-                document.getElementById('inNama').value = m.nama;
-                document.getElementById('inPlat').value = m.nomor_kendaraan;
-                document.getElementById('inJenis').value = m.jenis_kendaraan;
-                selectedMember = m;
+                document.getElementById('inNik').value = member.nik;
+                document.getElementById('inNama').value = member.nama;
+                document.getElementById('inPlat').value = member.nomor_kendaraan;
+                document.getElementById('inJenis').value = member.jenis_kendaraan;
+                selectedMember = member;
                 showPage('masuk', document.querySelector('[data-page="masuk"]'));
                 toast('✅ Member terdeteksi!', 'success');
             }
@@ -1114,7 +1278,7 @@ async function prosesScanManual() {
 }
 
 // ==========================================
-// DAFTAR MEMBER
+// DAFTAR MEMBER (FLOW BARU DENGAN VA)
 // ==========================================
 function loadHargaMember() {
     document.getElementById('hargaMotor').textContent = formatRupiah(settings.biaya_motor || 30000) + '/bulan';
@@ -1138,64 +1302,438 @@ async function daftarMember() {
     
     const nomor_member = genMemberNo();
     const biaya = settings['biaya_' + jenis] || (jenis === 'motor' ? 30000 : 90000);
-    const berlaku = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
     
+    // SIMPAN MEMBER DENGAN STATUS PENDING (BELUM BAYAR)
     const data = {
         nik, nama, alamat, no_telepon: telp, jenis_kendaraan: jenis, nomor_kendaraan: plat,
-        nomor_member, saldo: biaya, status: 'aktif',
-        tgl_daftar: new Date().toISOString().replace('T',' ').substring(0,19), tgl_berlaku: berlaku
+        nomor_member, 
+        saldo: 0, // Saldo mulai dari 0
+        status: 'pending', // Status pending sampai bayar
+        status_bayar: 'pending', // Status pembayaran
+        biaya_daftar: biaya, // Tagihan yang harus dibayar
+        tgl_daftar: new Date().toISOString(),
+        tgl_berlaku: null // Belum ada masa berlaku
     };
     
     await db.ref('members').push(data);
-    await db.ref('users/' + nik).set({
-        username: nik, password: hashPassword(nik), role: 'member', nama: nama,
-        createdAt: new Date().toISOString()
-    });
     
-    showModal('Pendaftaran Berhasil', `
-        <div style="text-align:center;padding:10px;">
-            <h2 style="color:var(--success);margin-bottom:16px;">✅ PENDAFTARAN BERHASIL</h2>
-            <hr style="border-color:var(--border);margin:12px 0;">
-            <p><strong>Nomor Member:</strong> <span style="color:var(--accent-teal);font-size:18px;">${nomor_member}</span></p>
-            <p><strong>Nama:</strong> ${nama}</p>
-            <p><strong>Jenis:</strong> ${jenis.toUpperCase()}</p>
-            <hr style="border-color:var(--border);margin:12px 0;">
-            <p><strong>Biaya Daftar:</strong> ${formatRupiah(biaya)}</p>
-            <p style="color:var(--success);"><strong>Saldo Awal:</strong> ${formatRupiah(biaya)}</p>
-            <hr style="border-color:var(--border);margin:12px 0;">
-            <p style="color:var(--accent-gold);font-weight:bold;">🔑 Info Login Member:</p>
-            <p>Username: <strong>${nik}</strong></p>
-            <p>Password: <strong>${nik}</strong></p>
-        </div>
-    `);
+    // Simpan data untuk pembayaran
+    pendingPaymentData = {
+        nik: nik,
+        nomor_member: nomor_member,
+        nama: nama,
+        jumlah: biaya,
+        tipe: 'pendaftaran'
+    };
     
+    // Tampilkan modal sukses + pilihan pembayaran
+    showModalPembayaran(biaya, 'pendaftaran');
+    
+    // Reset form
     ['dmNik','dmNama','dmAlamat','dmTelp','dmPlat'].forEach(id => document.getElementById(id).value='');
     document.getElementById('dmJenis').value = '';
 }
 
 // ==========================================
-// DATA MEMBER
+// SISTEM PEMBAYARAN VIRTUAL ACCOUNT
+// ==========================================
+function showModalPembayaran(jumlah, tipe) {
+    const metodePembayaran = [
+        { code: 'BCAVA', name: 'BCA Virtual Account', icon: '🏦', color: '#0060AF' },
+        { code: 'MANDIRIVA', name: 'Mandiri Virtual Account', icon: '🏦', color: '#003366' },
+        { code: 'BRIVA', name: 'BRI Virtual Account', icon: '🏦', color: '#00529C' },
+        { code: 'BNIVA', name: 'BNI Virtual Account', icon: '🏦', color: '#F05A22' },
+        { code: 'NTTVA', name: 'Bank NTT Virtual Account', icon: '🏦', color: '#00529C' },
+        { code: 'QRIS', name: 'QRIS (Semua E-Wallet)', icon: '📱', color: '#E31E24' }
+    ];
+
+    const judul = tipe === 'pendaftaran' ? '💳 Pembayaran Pendaftaran' : '💳 Topup Saldo';
+    const subJudul = tipe === 'pendaftaran' ? 'Biaya pendaftaran member' : 'Topup saldo member';
+
+    const html = `
+        <div style="text-align:center;margin-bottom:20px;">
+            <h3 style="color:var(--accent-teal);margin-bottom:8px;">${judul}</h3>
+            <p style="color:var(--text-secondary);font-size:13px;">${subJudul}</p>
+            <h2 style="color:var(--accent-gold);font-size:28px;margin:8px 0;">${formatRupiah(jumlah)}</h2>
+            <p style="font-size:12px;color:var(--text-muted);">Aman & Terenkripsi oleh Tripay</p>
+        </div>
+        
+        <div style="display:grid;gap:10px;max-height:300px;overflow-y:auto;">
+            ${metodePembayaran.map(m => `
+                <button onclick="pilihMetodeBayar('${m.code}', '${m.name}', ${jumlah}, '${tipe}')" 
+                    style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);cursor:pointer;transition:all 0.2s;">
+                    <div style="width:40px;height:40px;background:${m.color};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">
+                        ${m.icon}
+                    </div>
+                    <div style="flex:1;text-align:left;">
+                        <div style="font-weight:bold;font-size:14px;">${m.name}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">Otomatis terverifikasi</div>
+                    </div>
+                    <div style="color:var(--accent-teal);font-size:18px;">›</div>
+                </button>
+            `).join('')}
+        </div>
+        
+        <button onclick="closeModal()" style="width:100%;margin-top:16px;padding:12px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:10px;cursor:pointer;">
+            Batal
+        </button>
+    `;
+    
+    showModal('Pembayaran', html);
+}
+
+async function pilihMetodeBayar(kodeMetode, namaMetode, jumlah, tipe) {
+    closeModal();
+    toast(`⏳ Membuat ${namaMetode}...`, 'info');
+    
+    setTimeout(() => {
+        tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe);
+    }, 1500);
+}
+
+function tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe) {
+    // Generate Nomor VA Dummy
+    const nomorVA = '8808' + Math.floor(1000000000 + Math.random() * 9000000000); 
+    const expiredTime = new Date(Date.now() + 60 * 60 * 1000);
+    const expiredTimeStr = expiredTime.toLocaleString('id-ID');
+    
+    // Simpan info VA ke pendingPaymentData
+    if (pendingPaymentData) {
+        pendingPaymentData.nomorVA = nomorVA;
+        pendingPaymentData.metode = kodeMetode;
+        pendingPaymentData.namaMetode = namaMetode;
+        pendingPaymentData.expired = expiredTime.getTime();
+    }
+    
+    let instruksi = '';
+    if (kodeMetode === 'BCAVA') {
+        instruksi = `
+            <li>Buka menu <b>m-BCA</b> atau <b>BCA KlikPay</b></li>
+            <li>Pilih <b>m-Transfer</b> > <b>BCA Virtual Account</b></li>
+            <li>Masukkan nomor: <b>${nomorVA}</b></li>
+            <li>Masukkan nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Masukkan PIN BCA Anda</li>
+            <li>Transaksi selesai</li>
+        `;
+    } else if (kodeMetode === 'NTTVA') {
+        instruksi = `
+            <li>Buka aplikasi <b>Bank NTT Mobile</b> atau kunjungi <b>ATM Bank NTT</b></li>
+            <li>Pilih menu <b>Transaksi Lain</b> > <b>Pembayaran</b></li>
+            <li>Pilih <b>Virtual Account</b></li>
+            <li>Masukkan nomor VA: <b>${nomorVA}</b></li>
+            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Simpan bukti transaksi</li>
+            <li>Transaksi selesai</li>
+        `;
+    } else if (kodeMetode === 'QRIS') {
+        instruksi = `
+            <li>Buka aplikasi E-Wallet (GoPay/OVO/Dana/ShopeePay)</li>
+            <li>Pilih menu <b>Scan / QRIS</b></li>
+            <li>Scan QR Code yang muncul</li>
+            <li>Konfirmasi pembayaran</li>
+        `;
+    } else {
+        instruksi = `
+            <li>Buka Mobile Banking ${namaMetode.replace(' Virtual Account','')}</li>
+            <li>Pilih menu <b>Pembayaran</b> > <b>Virtual Account</b></li>
+            <li>Masukkan nomor: <b>${nomorVA}</b></li>
+            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
+            <li>Selesai</li>
+        `;
+    }
+
+    const html = `
+        <div style="text-align:center;padding:10px;">
+            <div id="paymentStatusBanner" style="background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:12px;margin-bottom:16px;">
+                <p style="color:var(--warning);font-weight:bold;margin:0;font-size:14px;">⏳ Menunggu Pembayaran</p>
+                <p id="countdownTimer" style="font-size:12px;color:var(--text-muted);margin:4px 0 0 0;">Selesaikan sebelum ${expiredTimeStr}</p>
+            </div>
+            
+            <div style="background:var(--bg-input);padding:16px;border-radius:10px;margin-bottom:16px;">
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Nomor ${namaMetode}</p>
+                <h2 style="color:var(--accent-teal);font-size:24px;margin:4px 0;letter-spacing:2px;">${nomorVA}</h2>
+                <p style="color:var(--accent-gold);font-weight:bold;margin:8px 0 0 0;">Total: ${formatRupiah(jumlah)}</p>
+                <button onclick="navigator.clipboard.writeText('${nomorVA}');toast('Nomor VA disalin!','success')" 
+                    style="background:transparent;border:1px solid var(--accent-teal);color:var(--accent-teal);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-top:8px;">
+                    📋 Salin Nomor
+                </button>
+            </div>
+            
+            <div style="text-align:left;background:var(--bg-card);padding:16px;border-radius:10px;margin-bottom:16px;">
+                <p style="font-weight:bold;margin-bottom:8px;color:var(--text-primary);">📋 Instruksi Pembayaran:</p>
+                <ol style="padding-left:20px;margin:0;color:var(--text-secondary);font-size:12px;line-height:1.6;">
+                    ${instruksi}
+                </ol>
+            </div>
+            
+            <div style="background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:12px;margin-bottom:16px;">
+                <p style="font-size:12px;color:var(--warning);margin:0;">
+                    ⚠️ <b>PENTING:</b> Jangan tutup halaman ini sampai pembayaran terverifikasi otomatis.
+                </p>
+            </div>
+
+            <button onclick="cekStatusPembayaran('${nomorVA}', '${tipe}')" class="btn btn-success" style="width:100%;padding:14px;margin-bottom:8px;">
+                ✅ Saya Sudah Bayar (Cek Status)
+            </button>
+            <button onclick="closeModal()" style="width:100%;padding:10px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;">
+                Batalkan Transaksi
+            </button>
+        </div>
+    `;
+    
+    showModal('Instruksi Pembayaran', html);
+    
+    // Mulai polling cek status setiap 5 detik
+    startPollingStatus(nomorVA, tipe);
+}
+
+function startPollingStatus(nomorVA, tipe) {
+    // Hentikan polling lama jika ada
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    let countdown = 3600; // 1 jam dalam detik
+    
+    pollingInterval = setInterval(() => {
+        // Update countdown
+        countdown--;
+        const minutes = Math.floor(countdown / 60);
+        const seconds = countdown % 60;
+        const timerEl = document.getElementById('countdownTimer');
+        if (timerEl) {
+            timerEl.textContent = `Sisa waktu: ${minutes} menit ${seconds} detik`;
+        }
+        
+        // Jika waktu habis
+        if (countdown <= 0) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            const banner = document.getElementById('paymentStatusBanner');
+            if (banner) {
+                banner.style.background = 'rgba(239,68,68,0.1)';
+                banner.style.borderColor = 'var(--danger)';
+                banner.innerHTML = '<p style="color:var(--danger);font-weight:bold;margin:0;">❌ Waktu pembayaran habis</p>';
+            }
+        }
+        
+        // Cek status pembayaran (simulasi - nanti diganti dengan API Tripay)
+        // Di sini kita bisa panggil Firebase Functions untuk cek ke Tripay
+        // Untuk demo, kita tidak auto-detect, user harus klik "Saya Sudah Bayar"
+        
+    }, 1000);
+}
+
+async function cekStatusPembayaran(nomorVA, tipe) {
+    toast('🔄 Mengecek status pembayaran...', 'info');
+    
+    // Simulasi delay (nanti diganti dengan API call ke Tripay via Firebase Functions)
+    setTimeout(async () => {
+        if (tipe === 'pendaftaran') {
+            await prosesPembayaranPendaftaran();
+        } else if (tipe === 'topup') {
+            await prosesPembayaranTopup();
+        }
+    }, 2000);
+}
+
+async function prosesPembayaranPendaftaran() {
+    if (!pendingPaymentData) {
+        toast('❌ Data pembayaran tidak ditemukan', 'error');
+        return;
+    }
+    
+    const { nik, nomor_member, nama, jumlah } = pendingPaymentData;
+    
+    // Update status member menjadi PAID
+    const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
+    if (!snap.exists()) {
+        toast('❌ Member tidak ditemukan', 'error');
+        return;
+    }
+    
+    const key = Object.keys(snap.val())[0];
+    const berlaku = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
+    
+    await db.ref('members/' + key).update({
+        status_bayar: 'paid',
+        status: 'aktif',
+        saldo: jumlah,
+        tgl_berlaku: berlaku,
+        tgl_bayar: new Date().toISOString(),
+        metode_bayar: pendingPaymentData.metode || 'manual'
+    });
+    
+    // Buat akun login
+    await db.ref('users/' + nik).set({
+        username: nik,
+        password: hashPassword(nik),
+        role: 'member',
+        nama: nama,
+        createdAt: new Date().toISOString()
+    });
+    
+    // Stop polling
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+    
+    // Tampilkan sukses
+    showModal('Pendaftaran Berhasil', `
+        <div style="text-align:center;padding:10px;">
+            <div style="font-size:80px;margin-bottom:16px;">🎉</div>
+            <h2 style="color:var(--success);margin-bottom:8px;">PEMBAYARAN BERHASIL!</h2>
+            <p style="color:var(--text-secondary);margin-bottom:16px;">Akun member telah aktif</p>
+            
+            <div style="background:var(--bg-input);padding:16px;border-radius:10px;margin-bottom:16px;text-align:left;">
+                <p style="margin:4px 0;"><strong>Nomor Member:</strong> <span style="color:var(--accent-teal);">${nomor_member}</span></p>
+                <p style="margin:4px 0;"><strong>Nama:</strong> ${nama}</p>
+                <p style="margin:4px 0;"><strong>Saldo:</strong> <span style="color:var(--success);font-weight:bold;">${formatRupiah(jumlah)}</span></p>
+                <p style="margin:4px 0;"><strong>Berlaku s/d:</strong> ${formatTanggalSingkat(berlaku)}</p>
+            </div>
+            
+            <div style="background:rgba(16,185,129,0.1);border:1px solid var(--success);padding:12px;border-radius:10px;margin-bottom:16px;">
+                <p style="color:var(--success);font-weight:bold;margin:0 0 8px 0;">🔑 Info Login Member:</p>
+                <p style="margin:4px 0;color:var(--text-secondary);">Username: <strong style="color:var(--text-primary);">${nik}</strong></p>
+                <p style="margin:4px 0;color:var(--text-secondary);">Password: <strong style="color:var(--text-primary);">${nik}</strong></p>
+            </div>
+            
+            <button onclick="closeModal()" class="btn btn-success" style="width:100%;padding:14px;">
+                ✅ Selesai
+            </button>
+        </div>
+    `);
+    
+    pendingPaymentData = null;
+}
+
+async function prosesPembayaranTopup() {
+    if (!pendingPaymentData || !selectedMember) {
+        toast('❌ Data pembayaran tidak ditemukan', 'error');
+        return;
+    }
+    
+    const jumlah = pendingPaymentData.jumlah;
+    
+    const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
+    if (!snap.exists()) {
+        toast('❌ Member tidak ditemukan', 'error');
+        return;
+    }
+    
+    const key = Object.keys(snap.val())[0];
+    const member = snap.val()[key];
+    const saldoBaru = (member.saldo || 0) + jumlah;
+    const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
+    
+    await db.ref('members/' + key).update({ 
+        saldo: saldoBaru, 
+        tgl_berlaku: berlakuBaru,
+        tgl_topup: new Date().toISOString(),
+        metode_topup: pendingPaymentData.metode || 'manual'
+    });
+    
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+    
+    showModal('Topup Berhasil', `
+        <div style="text-align:center;padding:20px;">
+            <div style="font-size:80px;margin-bottom:16px;">🎉</div>
+            <h2 style="color:var(--success);margin-bottom:8px;">TOPUP BERHASIL!</h2>
+            <p style="color:var(--text-secondary);margin-bottom:16px;">Saldo member telah ditambahkan</p>
+            <div style="background:var(--bg-input);padding:16px;border-radius:10px;">
+                <p style="font-size:12px;color:var(--text-muted);">Nominal Topup</p>
+                <h3 style="color:var(--accent-gold);font-size:24px;margin:4px 0;">${formatRupiah(jumlah)}</h3>
+                <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">Saldo Baru</p>
+                <h3 style="color:var(--accent-teal);font-size:24px;margin:4px 0;">${formatRupiah(saldoBaru)}</h3>
+            </div>
+            <button onclick="closeModal()" class="btn btn-success" style="width:100%;padding:14px;margin-top:16px;">
+                ✅ Selesai
+            </button>
+        </div>
+    `);
+    
+    selectedMember = null;
+    pendingPaymentData = null;
+    document.getElementById('topupSearch').value = '';
+    document.getElementById('topupInfo').style.display = 'none';
+    document.getElementById('topupNominal').style.display = 'none';
+}
+
+// ==========================================
+// TOPUP
+// ==========================================
+async function cariMemberTopup() {
+    const q = sanitize(document.getElementById('topupSearch').value);
+    if (!q) return toast('Masukkan NIK atau Nomor Member','error');
+    let snap = await db.ref('members').orderByChild('nik').equalTo(q).once('value');
+    if (!snap.exists()) snap = await db.ref('members').orderByChild('nomor_member').equalTo(q).once('value');
+    if (!snap.exists()) return toast('Member tidak ditemukan','error');
+    selectedMember = Object.values(snap.val())[0];
+    
+    // Cek status bayar
+    if (selectedMember.status_bayar === 'pending') {
+        return toast('⏳ Member belum menyelesaikan pembayaran pendaftaran', 'error');
+    }
+    
+    document.getElementById('topupInfo').style.display = 'block';
+    document.getElementById('topupInfo').innerHTML = `<div class="list-item"><div class="list-item-info"><h4>👤 ${selectedMember.nama}</h4><p style="color:var(--accent-teal);">${selectedMember.nomor_member}</p><p>${selectedMember.nomor_kendaraan} | ${selectedMember.jenis_kendaraan.toUpperCase()}</p><p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(selectedMember.saldo||0)}</p></div></div>`;
+    document.getElementById('topupNominal').style.display = 'block';
+}
+
+async function prosesTopup(jumlah) {
+    if (isTopupProcessing) return;
+    if (!selectedMember) return toast('Cari member dulu','error');
+
+    pendingPaymentData = {
+        nik: selectedMember.nik,
+        nomor_member: selectedMember.nomor_member,
+        nama: selectedMember.nama,
+        jumlah: jumlah,
+        tipe: 'topup'
+    };
+    
+    showModalPembayaran(jumlah, 'topup');
+}
+
+// ==========================================
+// DATA MEMBER (dengan Badge Status Bayar)
 // ==========================================
 async function renderMembers() {
     const snap = await db.ref('members').once('value');
     const all = snap.val() ? Object.values(snap.val()) : [];
     const q = (document.getElementById('searchMember')?.value || '').toLowerCase();
     const filtered = all.filter(m => m.nama.toLowerCase().includes(q) || m.nik.includes(q) || m.nomor_member.toLowerCase().includes(q));
-    const totalSaldo = filtered.reduce((a,b) => a + (b.saldo||0), 0);
-    document.getElementById('memberStats').innerHTML = `📊 Total <strong>${filtered.length}</strong> member | 💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>`;
+    const totalSaldo = filtered.filter(m => m.status_bayar === 'paid').reduce((a,b) => a + (b.saldo||0), 0);
+    const pendingCount = filtered.filter(m => m.status_bayar === 'pending').length;
+    
+    document.getElementById('memberStats').innerHTML = `
+        📊 Total <strong>${filtered.length}</strong> member | 
+        💰 Saldo gabungan <strong>${formatRupiah(totalSaldo)}</strong>
+        ${pendingCount > 0 ? `| ⏳ <strong style="color:var(--warning);">${pendingCount} belum bayar</strong>` : ''}
+    `;
+    
     const list = document.getElementById('memberList');
     if (filtered.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">👥 Belum ada member</p>'; return; }
+    
     list.innerHTML = filtered.map(m => {
-        const statusCol = m.status === 'aktif' ? 'var(--success)' : 'var(--danger)';
-        return `<div class="list-item">
+        const statusCol = m.status === 'aktif' ? 'var(--success)' : 'var(--warning)';
+        const bayarBadge = m.status_bayar === 'paid' 
+            ? '<span class="badge" style="background:rgba(16,185,129,0.2);color:var(--success);">✅ LUNAS</span>'
+            : '<span class="badge" style="background:rgba(245,158,11,0.2);color:var(--warning);">⏳ BELUM BAYAR</span>';
+        
+        return `<div class="list-item" style="${m.status_bayar === 'pending' ? 'border-left:3px solid var(--warning);' : ''}">
             <div class="list-item-info">
-                <h4>📇 ${m.nama}</h4>
+                <h4>📇 ${m.nama} ${bayarBadge}</h4>
                 <p style="color:var(--accent-teal);">${m.nomor_member}</p>
                 <p>${m.nomor_kendaraan} | <span class="badge badge-${m.jenis_kendaraan}">${m.jenis_kendaraan.toUpperCase()}</span></p>
                 <p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(m.saldo||0)}</p>
-                <p><span style="color:${statusCol};font-weight:bold;">${m.status.toUpperCase()}</span> • Berlaku s/d ${formatTanggalSingkat(m.tgl_berlaku)}</p>
+                ${m.status_bayar === 'pending' ? `<p style="color:var(--warning);font-size:11px;">💳 Tagihan: ${formatRupiah(m.biaya_daftar || 0)}</p>` : ''}
+                <p><span style="color:${statusCol};font-weight:bold;">${(m.status || 'pending').toUpperCase()}</span> • ${m.tgl_berlaku ? `Berlaku s/d ${formatTanggalSingkat(m.tgl_berlaku)}` : 'Menunggu pembayaran'}</p>
             </div>
             <div style="display:flex;gap:6px;flex-shrink:0;">
+                ${m.status_bayar === 'pending' ? `<button class="btn btn-sm btn-success" onclick="konfirmasiBayarManual('${m.nik}')" title="Konfirmasi Bayar">✅</button>` : ''}
                 <button class="btn btn-ghost btn-sm" onclick="showDetailMember('${m.nik}')" title="Detail">👁️</button>
                 <button class="btn btn-danger btn-sm" onclick="hapusMember('${m.nik}', '${m.nama.replace(/'/g, "\\'")}')" title="Hapus">🗑️</button>
             </div>
@@ -1207,8 +1745,8 @@ async function exportMemberCSV() {
     const snap = await db.ref('members').once('value');
     const data = snap.val() ? Object.values(snap.val()) : [];
     if (data.length === 0) return toast('Tidak ada data','error');
-    let csv = 'No Member,NIK,Nama,Alamat,Telepon,Jenis,Nopol,Saldo,Status,Daftar,Berlaku\n';
-    data.forEach(m => { csv += `"${m.nomor_member}","${m.nik}","${m.nama}","${m.alamat||''}","${m.no_telepon||''}","${m.jenis_kendaraan}","${m.nomor_kendaraan}",${m.saldo||0},"${m.status}","${m.tgl_daftar||''}","${m.tgl_berlaku||''}"\n`; });
+    let csv = 'No Member,NIK,Nama,Alamat,Telepon,Jenis,Nopol,Saldo,Status,Status Bayar,Biaya Daftar,Tgl Daftar,Berlaku\n';
+    data.forEach(m => { csv += `"${m.nomor_member}","${m.nik}","${m.nama}","${m.alamat||''}","${m.no_telepon||''}","${m.jenis_kendaraan}","${m.nomor_kendaraan}",${m.saldo||0},"${m.status||'pending'}","${m.status_bayar||'pending'}",${m.biaya_daftar||0},"${m.tgl_daftar||''}","${m.tgl_berlaku||''}"\n`; });
     const blob = new Blob([csv], {type:'text/csv'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'member_' + new Date().toISOString().split('T')[0] + '.csv';
@@ -1234,18 +1772,27 @@ async function showDetailMember(nik) {
     const snap = await db.ref('members').orderByChild('nik').equalTo(nik).once('value');
     if (!snap.exists()) return;
     const m = Object.values(snap.val())[0];
+    
+    const statusBayarBadge = m.status_bayar === 'paid' 
+        ? '<span style="background:rgba(16,185,129,0.2);color:var(--success);padding:4px 10px;border-radius:10px;font-size:11px;font-weight:bold;">✅ LUNAS</span>'
+        : '<span style="background:rgba(245,158,11,0.2);color:var(--warning);padding:4px 10px;border-radius:10px;font-size:11px;font-weight:bold;">⏳ BELUM BAYAR</span>';
+    
     showModal('Detail Member', `
         <div style="padding:10px;">
             <h3 style="color:var(--accent-teal);">${m.nama}</h3>
-            <p style="color:var(--accent-teal);margin-bottom:12px;">${m.nomor_member}</p>
+            <p style="color:var(--accent-teal);margin-bottom:8px;">${m.nomor_member}</p>
+            <div style="margin-bottom:12px;">${statusBayarBadge}</div>
             <hr style="border-color:var(--border);margin:12px 0;">
             <p><strong>NIK:</strong> ${m.nik}</p>
             <p><strong>Telepon:</strong> ${m.no_telepon||'-'}</p>
             <p><strong>Alamat:</strong> ${m.alamat||'-'}</p>
             <p><strong>Kendaraan:</strong> ${m.nomor_kendaraan} (${m.jenis_kendaraan.toUpperCase()})</p>
             <p><strong>Saldo:</strong> <span style="color:var(--success);font-weight:bold;">${formatRupiah(m.saldo||0)}</span></p>
-            <p><strong>Status:</strong> ${m.status.toUpperCase()}</p>
-            <p><strong>Berlaku s/d:</strong> ${formatTanggalSingkat(m.tgl_berlaku)}</p>
+            ${m.biaya_daftar ? `<p><strong>Biaya Daftar:</strong> ${formatRupiah(m.biaya_daftar)}</p>` : ''}
+            <p><strong>Status:</strong> ${(m.status || 'pending').toUpperCase()}</p>
+            <p><strong>Tgl Daftar:</strong> ${m.tgl_daftar ? formatTanggalSingkat(m.tgl_daftar) : '-'}</p>
+            ${m.tgl_bayar ? `<p><strong>Tgl Bayar:</strong> ${formatTanggalSingkat(m.tgl_bayar)}</p>` : ''}
+            <p><strong>Berlaku s/d:</strong> ${m.tgl_berlaku ? formatTanggalSingkat(m.tgl_berlaku) : 'Menunggu pembayaran'}</p>
         </div>
     `);
 }
@@ -1257,9 +1804,12 @@ async function renderCetak() {
     const snap = await db.ref('members').once('value');
     const all = snap.val() ? Object.values(snap.val()) : [];
     const q = (document.getElementById('searchCetak')?.value || '').toLowerCase();
-    const filtered = all.filter(m => m.nama.toLowerCase().includes(q) || m.nik.includes(q) || m.nomor_member.toLowerCase().includes(q));
+    const filtered = all.filter(m => 
+        (m.nama.toLowerCase().includes(q) || m.nik.includes(q) || m.nomor_member.toLowerCase().includes(q)) 
+        && m.status_bayar === 'paid'
+    );
     const list = document.getElementById('cetakList');
-    if (filtered.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Tidak ditemukan</p>'; return; }
+    if (filtered.length === 0) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Tidak ditemukan (hanya member yang sudah bayar)</p>'; return; }
     list.innerHTML = filtered.map((m, i) => `
         <div class="card" style="margin-bottom:16px;">
             <div class="member-card-preview print-area">
@@ -1295,214 +1845,6 @@ function cetakKartu(i, no, nama, nik, plat, jenis, saldo, berlaku) {
     const win = window.open('', '_blank');
     win.document.write(`<html><head><title>Kartu - ${nama}</title><style>body{font-family:Arial;margin:20px;}.card{background:linear-gradient(135deg,#1a237e,#0d47a1);color:white;padding:24px;border-radius:16px;max-width:400px;margin:0 auto;border:2px solid #00e5a0;}.header{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:10px;margin-bottom:12px;}.header h2{color:#ffd700;margin:0;}.body{display:flex;gap:16px;}.info h3{margin:0 0 4px 0;font-size:18px;}.info .no{color:#00e5a0;font-size:12px;margin-bottom:10px;}.info p{font-size:11px;margin:3px 0;}@media print{body{margin:0;}}</style></head><body><div class="card"><div class="header"><h2>🅿️ PARKIR PREMIUM</h2><span>MEMBER CARD</span></div><div class="body"><div class="info"><h3>${nama}</h3><div class="no">${no}</div><p>NIK: ${nik}</p><p>Kendaraan: ${plat}</p><p>Jenis: ${jenis.toUpperCase()}</p><p style="color:#ffd700;font-weight:bold;">Saldo: ${formatRupiah(saldo)}</p><p style="font-size:10px;">Berlaku: ${formatTanggalSingkat(berlaku)}</p></div><div id="qr"></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById('qr'),{text:'${nik}',width:100,height:100});setTimeout(()=>window.print(),500);<\/script></body></html>`);
     win.document.close();
-}
-
-// ==========================================
-// TOPUP
-// ==========================================
-async function cariMemberTopup() {
-    const q = sanitize(document.getElementById('topupSearch').value);
-    if (!q) return toast('Masukkan NIK atau Nomor Member','error');
-    let snap = await db.ref('members').orderByChild('nik').equalTo(q).once('value');
-    if (!snap.exists()) snap = await db.ref('members').orderByChild('nomor_member').equalTo(q).once('value');
-    if (!snap.exists()) return toast('Member tidak ditemukan','error');
-    selectedMember = Object.values(snap.val())[0];
-    document.getElementById('topupInfo').style.display = 'block';
-    document.getElementById('topupInfo').innerHTML = `<div class="list-item"><div class="list-item-info"><h4>👤 ${selectedMember.nama}</h4><p style="color:var(--accent-teal);">${selectedMember.nomor_member}</p><p>${selectedMember.nomor_kendaraan} | ${selectedMember.jenis_kendaraan.toUpperCase()}</p><p style="color:var(--success);font-weight:bold;">💰 Saldo: ${formatRupiah(selectedMember.saldo||0)}</p></div></div>`;
-    document.getElementById('topupNominal').style.display = 'block';
-}
-
-// ==========================================
-// TOPUP DENGAN VIRTUAL ACCOUNT (TRIPAY UI)
-// ==========================================
-let pendingTopupAmount = 0;
-
-async function prosesTopup(jumlah) {
-    if (isTopupProcessing) return;
-    if (!selectedMember) return toast('Cari member dulu','error');
-
-    pendingTopupAmount = jumlah;
-    
-    // Tampilkan Modal Pilihan Metode Pembayaran
-    showModalPembayaran(jumlah, 'topup');
-}
-
-function showModalPembayaran(jumlah, tipe) {
-    const metodePembayaran = [
-        { code: 'BCAVA', name: 'BCA Virtual Account', icon: '🏦', color: '#0060AF' },
-        { code: 'MANDIRIVA', name: 'Mandiri Virtual Account', icon: '🏦', color: '#003366' },
-        { code: 'BRIVA', name: 'BRI Virtual Account', icon: '🏦', color: '#00529C' },
-        { code: 'BNIVA', name: 'BNI Virtual Account', icon: '🏦', color: '#F05A22' },
-        { code: 'NTTVA', name: 'Bank NTT Virtual Account', icon: '🏦', color: '#00529C' }, // <-- BANK NTT DITAMBAHKAN DI SINI
-        { code: 'QRIS', name: 'QRIS (Semua E-Wallet)', icon: '📱', color: '#E31E24' }
-    ];
-
-    const html = `
-        <div style="text-align:center;margin-bottom:20px;">
-            <h3 style="color:var(--accent-teal);margin-bottom:8px;">💳 Pilih Metode Pembayaran</h3>
-            <p style="color:var(--text-secondary);font-size:14px;">Total Tagihan:</p>
-            <h2 style="color:var(--accent-gold);font-size:28px;margin:8px 0;">${formatRupiah(jumlah)}</h2>
-            <p style="font-size:12px;color:var(--text-muted);">Aman & Terenkripsi oleh Tripay</p>
-        </div>
-        
-        <div style="display:grid;gap:10px;max-height:300px;overflow-y:auto;">
-            ${metodePembayaran.map(m => `
-                <button onclick="pilihMetodeBayar('${m.code}', '${m.name}', ${jumlah}, '${tipe}')" 
-                    style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);cursor:pointer;transition:all 0.2s;">
-                    <div style="width:40px;height:40px;background:${m.color};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">
-                        ${m.icon}
-                    </div>
-                    <div style="flex:1;text-align:left;">
-                        <div style="font-weight:bold;font-size:14px;">${m.name}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">Otomatis terverifikasi</div>
-                    </div>
-                    <div style="color:var(--accent-teal);font-size:18px;">›</div>
-                </button>
-            `).join('')}
-        </div>
-        
-        <button onclick="closeModal()" style="width:100%;margin-top:16px;padding:12px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:10px;cursor:pointer;">
-            Batal
-        </button>
-    `;
-    
-    showModal('Pembayaran', html);
-}
-
-async function pilihMetodeBayar(kodeMetode, namaMetode, jumlah, tipe) {
-    // Di tahap ini, aplikasi akan meminta Cloud Functions untuk membuat transaksi
-    // Untuk demo UI, kita tampilkan instruksi dummy terlebih dahulu
-    
-    closeModal();
-    toast(`⏳ Membuat ${namaMetode}...`, 'info');
-    
-    // Simulasi delay proses (Nanti diganti dengan panggilan ke Firebase Functions)
-    setTimeout(() => {
-        tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe);
-    }, 1500);
-}
-
-function tampilkanInstruksiVA(kodeMetode, namaMetode, jumlah, tipe) {
-    // Generate Nomor VA Dummy (Format Tripay biasanya diawali kode merchant)
-    const nomorVA = '8808' + Math.floor(1000000000 + Math.random() * 9000000000); 
-    const expiredTime = new Date(Date.now() + 60 * 60 * 1000).toLocaleString('id-ID'); // 1 jam
-    
-    let instruksi = '';
-    
-    if (kodeMetode === 'BCAVA') {
-        instruksi = `
-            <li>Buka menu <b>m-BCA</b> atau <b>BCA KlikPay</b></li>
-            <li>Pilih <b>m-Transfer</b> > <b>BCA Virtual Account</b></li>
-            <li>Masukkan nomor: <b>${nomorVA}</b></li>
-            <li>Masukkan nominal: <b>${formatRupiah(jumlah)}</b></li>
-            <li>Masukkan PIN BCA Anda</li>
-            <li>Transaksi selesai</li>
-        `;
-    } else if (kodeMetode === 'NTTVA') {
-        instruksi = `
-            <li>Buka aplikasi <b>Bank NTT Mobile</b> atau kunjungi <b>ATM Bank NTT</b></li>
-            <li>Pilih menu <b>Transaksi Lain</b> > <b>Pembayaran</b></li>
-            <li>Pilih <b>Virtual Account</b></li>
-            <li>Masukkan nomor VA: <b>${nomorVA}</b></li>
-            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
-            <li>Simpan bukti transaksi</li>
-            <li>Transaksi selesai</li>
-        `;
-    } else if (kodeMetode === 'QRIS') {
-        instruksi = `
-            <li>Buka aplikasi E-Wallet (GoPay/OVO/Dana/ShopeePay)</li>
-            <li>Pilih menu <b>Scan / QRIS</b></li>
-            <li>Scan QR Code yang muncul</li>
-            <li>Konfirmasi pembayaran</li>
-        `;
-    } else {
-        // Instruksi umum untuk Mandiri, BRI, BNI
-        instruksi = `
-            <li>Buka Mobile Banking ${namaMetode.replace(' Virtual Account','')}</li>
-            <li>Pilih menu <b>Pembayaran</b> > <b>Virtual Account</b></li>
-            <li>Masukkan nomor: <b>${nomorVA}</b></li>
-            <li>Konfirmasi nominal: <b>${formatRupiah(jumlah)}</b></li>
-            <li>Selesai</li>
-        `;
-    }
-
-    const html = `
-        <div style="text-align:center;padding:10px;">
-            <div style="background:rgba(16,185,129,0.1);border:1px solid var(--success);border-radius:10px;padding:12px;margin-bottom:16px;">
-                <p style="color:var(--success);font-weight:bold;margin:0;font-size:14px;">⏳ Menunggu Pembayaran</p>
-                <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;">Selesaikan sebelum ${expiredTime}</p>
-            </div>
-            
-            <div style="background:var(--bg-input);padding:16px;border-radius:10px;margin-bottom:16px;">
-                <p style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Nomor ${namaMetode}</p>
-                <h2 style="color:var(--accent-teal);font-size:24px;margin:4px 0;letter-spacing:2px;">${nomorVA}</h2>
-                <button onclick="navigator.clipboard.writeText('${nomorVA}');toast('Nomor VA disalin!','success')" 
-                    style="background:transparent;border:1px solid var(--accent-teal);color:var(--accent-teal);padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-top:8px;">
-                    📋 Salin Nomor
-                </button>
-            </div>
-            
-            <div style="text-align:left;background:var(--bg-card);padding:16px;border-radius:10px;margin-bottom:16px;">
-                <p style="font-weight:bold;margin-bottom:8px;color:var(--text-primary);">📋 Instruksi Pembayaran:</p>
-                <ol style="padding-left:20px;margin:0;color:var(--text-secondary);font-size:12px;line-height:1.6;">
-                    ${instruksi}
-                </ol>
-            </div>
-            
-            <div style="background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:10px;padding:12px;margin-bottom:16px;">
-                <p style="font-size:12px;color:var(--warning);margin:0;">
-                    ⚠️ <b>PENTING:</b> Jangan tutup halaman ini sampai pembayaran terverifikasi otomatis.
-                </p>
-            </div>
-
-            <button onclick="cekStatusPembayaran('${nomorVA}', '${tipe}')" class="btn btn-success" style="width:100%;padding:14px;">
-                ✅ Saya Sudah Bayar (Cek Status)
-            </button>
-            <button onclick="closeModal()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;">
-                Batalkan Transaksi
-            </button>
-        </div>
-    `;
-    
-    showModal('Instruksi Pembayaran', html);
-}
-
-async function cekStatusPembayaran(nomorVA, tipe) {
-    toast('🔄 Mengecek status pembayaran...', 'info');
-    
-    // Di sini nanti kita panggil Firebase Functions untuk cek ke Tripay
-    // Untuk demo, kita simulasikan sukses setelah 2 detik
-    
-    setTimeout(async () => {
-        if (tipe === 'topup') {
-            // Eksekusi topup manual (Nanti diganti otomatis via Webhook)
-            const snap = await db.ref('members').orderByChild('nomor_member').equalTo(selectedMember.nomor_member).once('value');
-            if (snap.exists()) {
-                const key = Object.keys(snap.val())[0];
-                const member = snap.val()[key];
-                const saldoBaru = (member.saldo || 0) + pendingTopupAmount;
-                const berlakuBaru = new Date(Date.now() + 30*24*60*60*1000).toISOString().replace('T',' ').substring(0,19);
-                
-                await db.ref('members/' + key).update({ saldo: saldoBaru, tgl_berlaku: berlakuBaru });
-                
-                showModal('Topup Berhasil', `
-                    <div style="text-align:center;padding:20px;">
-                        <div style="font-size:60px;margin-bottom:16px;">🎉</div>
-                        <h2 style="color:var(--success);margin-bottom:8px;">PEMBAYARAN BERHASIL!</h2>
-                        <p style="color:var(--text-secondary);margin-bottom:16px;">Saldo member telah ditambahkan secara otomatis.</p>
-                        <div style="background:var(--bg-input);padding:16px;border-radius:10px;">
-                            <p style="font-size:12px;color:var(--text-muted);">Saldo Baru</p>
-                            <h3 style="color:var(--accent-teal);font-size:24px;margin:4px 0;">${formatRupiah(saldoBaru)}</h3>
-                        </div>
-                    </div>
-                `);
-                selectedMember = null;
-                document.getElementById('topupSearch').value = '';
-                document.getElementById('topupInfo').style.display = 'none';
-                document.getElementById('topupNominal').style.display = 'none';
-            }
-        }
-    }, 2000);
 }
 
 // ==========================================
